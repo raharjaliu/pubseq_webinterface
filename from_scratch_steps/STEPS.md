@@ -4,8 +4,10 @@ Steps needed to create minimal working web app with Node.js and Express
 
 2.) Run the installer, check version of node and npm (`node -v` and `npm -v` respectively)
 
-3.) Installation and initial testing
+3.) Installation and initial testing:
+
 **EITHER**
+
 - go to directory for the webapp and do following: `npm init`
 - this will initate npm. Select following for paramter:
  - `name: pubseq_webapp (or any name)`
@@ -19,7 +21,9 @@ Steps needed to create minimal working web app with Node.js and Express
 - on the same directory, do the following: `npm install express --save`
 - edit app.js in following way (http://expressjs.com/starter/hello-world.html)
 - run the app: `node app.js`
+
 **OR**
+
 - install express-generator: `npm install express-generator -g`
 - check the help for express: `express -h`
 - go to working directory (the one containing the directory `pubseq_webapp`) and do following: `express pubseq_webapp`
