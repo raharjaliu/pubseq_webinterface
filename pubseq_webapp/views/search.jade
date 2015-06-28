@@ -8,7 +8,6 @@ html
       $(function () {
         $('#getseq').on('click', function () {
           var text = $('#seq');
-          console.log(text);
           text.val('MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD');    
         });
 
@@ -29,19 +28,37 @@ html
           var body = document.getElementById('body');
           var spinner = new Spinner().spin();
           spinner.el.id = "spinner"
-          console.log(spinner.el);
+          //console.log(spinner.el);
           body.appendChild(spinner.el);
 
-          setTimeout(function(body){
+          setTimeout(function(){
 
-            console.log("going in");
-            $('.spinner').remove();
+            console.log("GET-ing from Solr server");
 
-            window.location.replace('/results');
+            $.ajax({
+              method: "GET",
+              url: "http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=*:*",
+              dataType: "jsonp",
+              jsonp:"json.wrf",
+              success: function(data, textStatus) {
+
+                console.log("removing spinner");
+                $('.spinner').remove();
+
+                console.log("GET done");
+
+                var str = JSON.stringify(data, null, 2);
+
+                console.log(str);
+                
+                window.location.replace('/results');
+              },
+              error: function(jqXHR, textStatus, errorThrown ) {
+                console.log("Error %s: %s", errorThrown, textStatus);
+              }
+            });
 
           }, 2000);
-
-          //return false;
 
         });
       });
