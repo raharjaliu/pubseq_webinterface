@@ -18,13 +18,13 @@ var server = app.listen(3000, function() {
 
 app.get('/', function(req, res) {
   res.render('index', {
-    title: 'PubSeq - Welcome!'
+    title: 'PubSeq - Search'
   });
 });
 
-app.get('/search', function(req, res) {
-  res.render('search', {
-    title: 'PubSeq - Search'
+app.get('/about', function(req, res) {
+  res.render('about', {
+    title: 'About PubSeq'
   });
 });
 
