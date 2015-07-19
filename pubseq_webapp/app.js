@@ -1,10 +1,17 @@
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
+var http = require('http');
 
+// enables POST body parser
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// defines views and view format
 app.set('views', './views');
 app.set('view engine', 'jade');
 
-
+// defines server
 var server = app.listen(3000, function() {
 
   console.log(server.address());
@@ -15,25 +22,61 @@ var server = app.listen(3000, function() {
   console.log('Example app listening at http://%s:%s', host, port)
 });
 
-
+// GET handler for '/'
 app.get('/', function(req, res) {
+  //res.header('Content-Type', 'application/json; charset=utf-8');
   res.render('index', {
     title: 'PubSeq - Search'
   });
 });
 
+// POST handler for '/'
+app.post('/', function(req, res) {
+  console.log('POST!');
+  console.log(req.body);
+
+  // TODO BLASTING the sequence starts here
+
+  var solrResponse;
+
+  // TODO queries Solr index
+  http.get(
+    "http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=*:*",
+    function(res) {
+      console.log('got response');
+
+      res.on("data", function(chunk) {
+        console.log("BODY: " + chunk);
+
+        // the response would then be returned back to client
+      });
+
+    }).on('error', function(e){
+      console.log('got error');
+      //console.log(e);
+    });
+
+    console.log("Solr response is");
+    console.log(solrResponse);
+
+  res.send(req.body);
+});
+
+// GET handler for '/about'
 app.get('/about', function(req, res) {
   res.render('about', {
     title: 'About PubSeq'
   });
 });
 
+// GET handler for '/contact'
 app.get('/contact', function(req, res) {
   res.render('contact', {
     title: 'PubSeq - Drop me a message!'
   });
 });
 
+// GET handler for '/results'
 app.get('/results', function(req, res) {
   res.render('results', {
     title: 'PubSeq - Drop me a message!'
