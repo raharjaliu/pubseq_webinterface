@@ -353,7 +353,7 @@ html
             url:" /",
             data: {
               // TODO change 'query' value to '*' and add 'sequence' key which will be BLASTed on Node server
-              "query": text.val(),
+              "query": encodeURIComponent(text.val()),
               /*
                 mode defines the behaviour of query:
                 - 'new' means it's starting query
