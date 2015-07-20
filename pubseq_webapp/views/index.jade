@@ -44,12 +44,12 @@ html
             "QADSKPLQPLPNTAHSISDRLPEEKMQTQGSSNQ"
       }
 
-      function resetQueryResults() {
+      function resetQueryResults(query) {
 
         queryResults = {};
         queryResults["pages"] = {};
+        queryResults["query"] = query;
         curPage = 0;
-
       }
 
       function activateSpinner() {
@@ -140,7 +140,9 @@ html
         }        
       }
 
-      function createNav(pagePos, query) {
+      function createNav() {
+
+        //console.log("createNav()::curPage is " + curPage);
 
         // left arrow
         var results = document.getElementById("results");
@@ -152,12 +154,12 @@ html
         ul.setAttribute('class', 'pagination');
         nav.appendChild(ul);
 
-        var pagePrev = pagePos - 1;
+        var pagePrev = curPage - 1;
         var liLeft = document.createElement("li");
         ul.appendChild(liLeft);
 
         var aLiLeft = document.createElement('a');
-        var onClickLeft = "openPage(" + pagePrev + ",'" + query + "');";
+        var onClickLeft = "openPage(" + pagePrev + ");";
         aLiLeft.setAttribute("onclick", onClickLeft);
         aLiLeft.setAttribute("aria-label", "Previous");
         liLeft.appendChild(aLiLeft);
@@ -174,16 +176,16 @@ html
 
         var aLiCur = document.createElement('a');
         aLiCur.setAttribute("href", "#");
-        aLiCur.innerHTML = pagePos;
+        aLiCur.innerHTML = curPage;
         liCur.appendChild(aLiCur);
 
         // right arrow
-        var pageNext = pagePos + 1;
+        var pageNext = curPage + 1;
         var liRight = document.createElement("li");
         ul.appendChild(liRight);
 
         var aLiRight = document.createElement('a');
-        var onClickRight = "openPage(" + pageNext + ",'" + query + "');";
+        var onClickRight = "openPage(" + pageNext + ");";
         aLiRight.setAttribute("onclick", onClickRight);
         aLiRight.setAttribute("aria-label", "Previous");
         liRight.appendChild(aLiRight);
@@ -195,9 +197,11 @@ html
 
       }
 
-      function handleReturnData(data, query) {
+      function handleReturnData(data) {
 
-        var str = JSON.stringify(data, null, 2);
+        console.log("handleReturnData()::curPage is " + curPage);
+
+        //var str = JSON.stringify(data, null, 2);
         //console.log(str);
 
         // remove any exsting children form results
@@ -207,26 +211,24 @@ html
         }
 
         // append new articles on results
-        appendArticles(data);
+        appendArticles(data["respBody"]);
 
         // create nav bar at the bottom
-        createNav(curPage, query);
+        createNav();
               
         // add this result onto global object queryResults
         var thisResult = {
           "data" : data,
-          "next" : data["nextCursorMark"]
+          "next" : data["respBody"]["nextCursorMark"]
         }
         queryResults[curPage] = thisResult;
         //console.log(queryResults);
 
       }
 
-      function openPage(pageNum, query) {
+      function openPage(pageNum) {
 
-        console.log("openPage");
-
-        console.log(pageNum);
+        console.log("openPage()::pageNum is " + pageNum);
 
         if (pageNum in queryResults) {
           /*
@@ -237,14 +239,14 @@ html
           // update current page indicator
           curPage = pageNum;
 
-          handleReturnData(queryResults[pageNum]["data"], query);
+          handleReturnData(queryResults[pageNum]['data']);
 
           // remove spinner
           deactivateSpinner();
 
         } else {
           /*
-          otherwise, query the page on Solr index
+          otherwise, query the page on Solr index via Node
           */
           if(pageNum >= 0) {
 
@@ -256,6 +258,42 @@ html
               cursorMark = encodeURIComponent(queryResults[pageNum - 1]["next"]);
             }
 
+            $.ajax({
+              method: "POST",
+              url:" /",
+              data: {
+                "query": queryResults["query"],
+                /*
+                  mode defines the behaviour of query:
+                  - 'new' means it's starting query
+                  - 'update' means subsequent query (page moving etc)
+                  in case of 'update' defines the page it request
+                  by adding another key 'cursorMark' defining the page it
+                  wants to go
+                */
+                "mode": "update",
+                "cursorMark": cursorMark
+              },
+              dataType: "json",
+              success: function(data, textStatus) {
+
+                console.log("POST succees!");
+                curPage = pageNum;
+                var nodeResp = JSON.stringify(data, null, 2);
+                console.log(nodeResp);
+                handleReturnData(data);
+                deactivateSpinner();
+
+              },
+              error: function(jqXHR, textStatus, errorThrown ) {
+              
+                console.log("Error %s: %s", errorThrown, textStatus);
+                deactivateSpinner();
+            
+              }
+            });
+
+            /*
             $.ajax({
               method: "GET",
               url:"//localhost:8983/solr/pubseq/select?wt=json&indent=true&q=" + 
@@ -280,6 +318,7 @@ html
                 deactivateSpinner();
               }
             });
+            */
           }
         }
       }
@@ -298,33 +337,6 @@ html
           // get the value of textarea
           var text = $("#seq");
 
-          // TODO: NEW AJAX METHOD POSTING TO NODE
-          $.ajax({
-            method: "POST",
-            url:" /",
-            data: {
-              "sequence": text.val(),
-              /*
-                mode defines the behaviour of query:
-                - 'new' means it's starting query
-                - 'update' means subsequent query (page moving etc)
-                in case of 'update' defines the page it request
-                by adding another key 'cursor' defining the page it
-                wants to go
-              */
-              "mode": "new" 
-            },
-            dataType: "json",
-            success: function(data, textStatus) {
-              console.log(data);
-            },
-            error: function(jqXHR, textStatus, errorThrown ) {
-              console.log("Error %s: %s", errorThrown, textStatus);
-              deactivateSpinner();
-            }
-          });
-          // END OF TEST
-
           // removes onclick attribute from Query button
           //$('#search').removeAttr('onclick');
 
@@ -334,32 +346,44 @@ html
           // shows spinner
           activateSpinner();
 
-
           //console.log(text.val());
 
           $.ajax({
-            method: "GET",
-            url:"//localhost:8983/solr/pubseq/select?wt=json&indent=true&q=" + 
-              text.val() + "&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=*",
-            dataType: "jsonp",
-            jsonp:"json.wrf",
+            method: "POST",
+            url:" /",
+            data: {
+              // TODO change 'query' value to '*' and add 'sequence' key which will be BLASTed on Node server
+              "query": text.val(),
+              /*
+                mode defines the behaviour of query:
+                - 'new' means it's starting query
+                - 'update' means subsequent query (page moving etc)
+                in case of 'update' defines the page it request
+                by adding another key 'cursorMark' defining the page it
+                wants to go
+              */
+              "mode": "new",
+              "cursorMark": "*"
+            },
+            dataType: "json",
             success: function(data, textStatus) {
 
-              // reset current page indicator and query results object
-              resetQueryResults();
+              console.log("POST succees!");
 
-              handleReturnData(data, text.val());
-
-              // remove spinner
+              var nodeResp = JSON.stringify(data, null, 2);
+              console.log(nodeResp);
+              resetQueryResults(data["query"]); 
+              handleReturnData(data);
               deactivateSpinner();
 
             },
             error: function(jqXHR, textStatus, errorThrown ) {
+              
               console.log("Error %s: %s", errorThrown, textStatus);
               deactivateSpinner();
+            
             }
           });
-
         });
       });
       

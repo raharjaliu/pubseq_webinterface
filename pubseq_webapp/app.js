@@ -19,12 +19,12 @@ var server = app.listen(3000, function() {
   var host = server.address().address;
   var port = server.address().port;
 
-  console.log('Example app listening at http://%s:%s', host, port)
+  console.log('PubSeq app listening at http://%s:%s', host, port)
 });
 
 // GET handler for '/'
 app.get('/', function(req, res) {
-  //res.header('Content-Type', 'application/json; charset=utf-8');
+  console.log("GET requested at '/'");
   res.render('index', {
     title: 'PubSeq - Search'
   });
@@ -32,38 +32,52 @@ app.get('/', function(req, res) {
 
 // POST handler for '/'
 app.post('/', function(req, res) {
-  console.log('POST!');
-  console.log(req.body);
-
+  console.log("POST requested at '/'");
   // TODO BLASTING the sequence starts here
 
-  var solrResponse;
+  var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
+                          req.body.query + 
+                          '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
+                          req.body.cursorMark;
+  var solrResponse = {};
+  solrResponse['query'] = req.body.query;
 
-  // TODO queries Solr index
   http.get(
-    "http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=*:*",
-    function(res) {
-      console.log('got response');
+    solrQueryComplete,
+    function(resp) {
 
-      res.on("data", function(chunk) {
-        console.log("BODY: " + chunk);
+      console.log('Got response from Solr index');
+      var dataStr = '';
 
-        // the response would then be returned back to client
+      resp.on("data", function(chunk) {
+
+        // 0 indicates success
+        solrResponse['status'] = 0;
+
+        dataStr += chunk;
+      });
+
+      resp.on('end', function () {
+
+        var resObj = JSON.parse(dataStr);
+        solrResponse['respBody'] = resObj;
+        res.json(solrResponse);
+
       });
 
     }).on('error', function(e){
-      console.log('got error');
+
+      console.log('Got error from Solr index');
+      // any status > 0 indicates failure
+      solrResponse['status'] = 1;
       //console.log(e);
+      res.json(solrResponse);
     });
-
-    console.log("Solr response is");
-    console.log(solrResponse);
-
-  res.send(req.body);
 });
 
 // GET handler for '/about'
 app.get('/about', function(req, res) {
+  console.log("GET requested at '/about'");
   res.render('about', {
     title: 'About PubSeq'
   });
@@ -71,6 +85,7 @@ app.get('/about', function(req, res) {
 
 // GET handler for '/contact'
 app.get('/contact', function(req, res) {
+  console.log("GET requested at '/contact'");
   res.render('contact', {
     title: 'PubSeq - Drop me a message!'
   });
@@ -78,10 +93,43 @@ app.get('/contact', function(req, res) {
 
 // GET handler for '/results'
 app.get('/results', function(req, res) {
+  console.log("GET requested at '/results'");
   res.render('results', {
     title: 'PubSeq - Drop me a message!'
   });
 });
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+// error handlers
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('error', {
+      message: err.message,
+      error: err
+    });
+  });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.render('error', {
+    message: err.message,
+    error: {}
+  });
+});
+
 
 // default implementation from express-generator
 /*
