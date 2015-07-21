@@ -42,6 +42,8 @@ app.post('/', function(req, res) {
   var solrResponse = {};
   solrResponse['query'] = req.body.query;
 
+  console.log(solrQueryComplete);
+
   http.get(
     solrQueryComplete,
     function(resp) {
@@ -58,6 +60,8 @@ app.post('/', function(req, res) {
       });
 
       resp.on('end', function () {
+
+        console.log(dataStr);
 
         var resObj = JSON.parse(dataStr);
         solrResponse['respBody'] = resObj;
