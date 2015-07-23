@@ -16,6 +16,18 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.set('views', './views');
 app.set('view engine', 'jade');
 
+String.prototype.hashCode = function(){
+    var hash = 0;
+    if (this.length == 0) return hash;
+    for (i = 0; i < this.length; i++) {
+        char = this.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
+}
+
+
 // defines server
 var server = app.listen(3000, function() {
 
@@ -38,13 +50,26 @@ app.get('/', function(req, res) {
 // POST handler for '/'
 app.post('/', function(req, res) {
 
-  exec('touch blast/test.in', function(error, stdout, stderr) {
-    console.log('stdout: ' + stdout);
-    console.log('stderr: ' + stderr);
-    if (error !== null) {
-        console.log('exec error: ' + error);
+  //exec("echo " + JSON.stringify(req.body); + " > blast/test.in");
+
+  var content = JSON.stringify(req.body);
+  var fileName = content.hashCode() + ".in";
+  exec("echo '> input_" + content.hashCode() + "\n" + content + "' > blast/" + fileName, 
+    function(error, stdout, stderr) {
+      console.log('stdout exec1: ' + stdout);
+      console.log('stderr exec1: ' + stderr);
+      if (error !== null) {
+        console.log('exec error exec1: ' + error);
+      }
+      exec("chmod 775 blast/" + fileName, function(error, stdout, stderr) {
+        console.log('stdout exec1: ' + stdout);
+        console.log('stderr exec1: ' + stderr);
+        if (error !== null) {
+          console.log('exec error exec1: ' + error);
+        } 
+      });
     }
-  });
+  );
 
   // TODO BLASTING the sequence starts here
 
