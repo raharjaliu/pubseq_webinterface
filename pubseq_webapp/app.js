@@ -68,7 +68,7 @@ app.post('/', function(req, res) {
   var cursorMark;
 
   console.log("incoming POST");
-  console.log(mode);
+  console.log(req.mode);
 
   if (req.body.mode == 'new') {
 
