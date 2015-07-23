@@ -6,6 +6,7 @@ html
     script(type="text/javascript", src="//fgnass.github.io/spin.js/spin.js")
     style.
       span.pmid { color:#005266 }
+      span.journal { color:#005266 }
     script.
 
       var queryResults;
@@ -117,11 +118,17 @@ html
           } else {
             author = auths[0] + " et al.";
           }
+          author += ".";
 
           var authoText = document.createTextNode(author);
           var authP = document.createElement("p");
           authP.appendChild(authoText);
           results.appendChild(authP);
+
+          var journal = document.createElement("span");
+          journal.setAttribute("class", "journal");
+          journal.innerHTML = " " + article["jornal"];
+          authP.appendChild(journal);
 
           var pAbstract = document.createElement("p");
           var textAbstract = document.createTextNode(article["abstract"].substr(0, 300));
