@@ -120,6 +120,9 @@ app.post('/', function(req, res) {
     if (req.body.mode === 'update') {
       // UPDATE mode
 
+      console.log("UPDATE");
+      console.log()
+
       query = req.body.query;
       cursorMark = req.body.cursorMark;
 
@@ -194,14 +197,14 @@ app.post('/', function(req, res) {
                 query += ('uniprotid:' + entries[2]);
               }
               cursorMark = '*';
-              postResponse['status'] = 'done';
-
               query = encodeURIComponent(query);
 
               var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
                                       query +
                                       '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
                                       cursorMark;
+              postResponse['status'] = 'done';
+              postResponse['query'] = query;
 
               http.get(solrQueryComplete, function(resp) {
 

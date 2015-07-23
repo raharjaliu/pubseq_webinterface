@@ -221,7 +221,7 @@ html
           "data" : data,
           "next" : data["respBody"]["nextCursorMark"]
         }
-        queryResults[curPage] = thisResult;
+        queryResults["pages"][curPage] = thisResult;
         console.log("queryResults now");
         console.log(queryResults);
       }
@@ -269,7 +269,7 @@ html
           // update current page indicator
           curPage = pageNum;
 
-          handleReturnData(queryResults[pageNum]['data']);
+          handleReturnData(queryResults["pages"][pageNum]["data"]);
 
           // remove spinner
           deactivateSpinner();
@@ -285,7 +285,7 @@ html
             if (pageNum == 0) {
               cursorMark = "*";
             } else {
-              cursorMark = encodeURIComponent(queryResults[pageNum - 1]["next"]);
+              cursorMark = encodeURIComponent(queryResults["pages"][pageNum - 1]["next"]);
               console.log("cursorMark is " + cursorMark);
             }
 
