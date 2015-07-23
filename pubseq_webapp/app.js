@@ -156,7 +156,7 @@ app.post('/', function(req, res) {
                 var split = line.split('\t');
                 var entries = split[1].split('|');
                 if (i > 0) {
-                  query = ' OR ';
+                  query += ' OR ';
                 }
                 query += ('uniprotid:' + entries[2]);
               }
