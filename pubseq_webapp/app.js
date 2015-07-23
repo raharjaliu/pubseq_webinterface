@@ -68,7 +68,7 @@ app.post('/', function(req, res) {
   var cursorMark;
 
   console.log("incoming POST");
-  console.log(req.mode);
+  console.log(req.body.mode);
 
   if (req.body.mode == 'new') {
 
@@ -123,6 +123,8 @@ app.post('/', function(req, res) {
     if (req.body.mode === 'update') {
       // UPDATE mode
 
+      console.log("UPDATE");
+
       query = req.body.query;
       cursorMark = req.body.cursorMark;
 
@@ -130,6 +132,8 @@ app.post('/', function(req, res) {
 
     } else if (req.body.mode == 'check') {
       // CHECK mode
+
+      console.log("CHECK");
 
       var outFile = req.body.id + '.out';
       var checkOutFile = 'ls blast/' + outFile;
