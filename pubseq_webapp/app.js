@@ -178,6 +178,7 @@ app.post('/', function(req, res) {
               postResponse['id'] = req.body.id;
               postResponse['status'] = 'running';
               res.json(postResponse);
+              return;
             }
           });
         } else {
@@ -185,6 +186,7 @@ app.post('/', function(req, res) {
           postResponse['id'] = req.body.id;
           postResponse['status'] = 'running';
           res.json(postResponse);
+          return;
         }
       });
     }
@@ -194,7 +196,7 @@ app.post('/', function(req, res) {
   console.log(querySolr);
 
   if (querySolr) {
-    console.log()
+    console.log(querySolr);
     var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
       query +
       '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
@@ -222,7 +224,7 @@ app.post('/', function(req, res) {
         var resObj = JSON.parse(dataStr);
         postResponse['respBody'] = resObj;
         res.json(postResponse);
-
+        return;
       });
 
       resp.on('error', function(e){
@@ -231,6 +233,7 @@ app.post('/', function(req, res) {
         postResponse['solrStatus'] = 1;
         //console.log(e);
         res.json(postResponse);
+        return;
       });
 
     });
