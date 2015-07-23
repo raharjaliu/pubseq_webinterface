@@ -194,6 +194,7 @@ app.post('/', function(req, res) {
   console.log(querySolr);
 
   if (querySolr) {
+    console.log()
     var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
       query +
       '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
@@ -224,12 +225,14 @@ app.post('/', function(req, res) {
 
       });
 
-    }).on('error', function(e) {
-      console.log('Got error from Solr index');
-      // any status > 0 indicates failure
-      postResponse['solrStatus'] = 1;
-      //console.log(e);
-      res.json(postResponse);
+      resp.on('error', function(e){
+        console.log('Got error from Solr index');
+        // any status > 0 indicates failure
+        postResponse['solrStatus'] = 1;
+        //console.log(e);
+        res.json(postResponse);
+      });
+
     });
   }
 });
