@@ -285,6 +285,7 @@ html
               cursorMark = "*";
             } else {
               cursorMark = encodeURIComponent(queryResults[pageNum - 1]["next"]);
+              console.log("cursorMark is " + cursorMark);
             }
 
             $.ajax({
