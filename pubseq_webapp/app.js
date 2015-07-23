@@ -63,6 +63,9 @@ app.get('/', function(req, res) {
 app.post('/', function(req, res) {
 
   var postResponse = {};
+  var querySolr = false;
+  var query;
+  var cursorMark;
 
   if (req.body.mode == 'new') {
 
@@ -113,10 +116,6 @@ app.post('/', function(req, res) {
       });
     });
   } else {
-
-    var query;
-    var cursorMark;
-    var querySolr = false;
 
     if (req.body.mode === 'update') {
       // UPDATE mode
@@ -183,12 +182,17 @@ app.post('/', function(req, res) {
       });
     }
 
+    consoke.log("querySolr");
+    console.log(querySolr);
+
     if (querySolr) {
       var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
         query +
         '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
         cursorMark;
       postResponse['query'] = query;
+
+      console.log(solrQueryComplete);
 
       http.get(solrQueryComplete, function(resp) {
 
