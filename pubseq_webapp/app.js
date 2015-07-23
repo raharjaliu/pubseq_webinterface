@@ -1,7 +1,12 @@
 var express = require('express');
+var path = require('path');
 var bodyParser = require('body-parser');
 var app = express();
 var http = require('http');
+var exec = require('child_process').exec;
+
+// defines default path
+app.use(express.static(path.join(__dirname, 'public')));
 
 // enables POST body parser
 app.use(bodyParser.json());
@@ -32,7 +37,15 @@ app.get('/', function(req, res) {
 
 // POST handler for '/'
 app.post('/', function(req, res) {
-  console.log("POST requested at '/'");
+
+  exec('pwd', function(error, stdout, stderr) {
+    console.log('stdout: ' + stdout);
+    console.log('stderr: ' + stderr);
+    if (error !== null) {
+        console.log('exec error: ' + error);
+    }
+  });
+
   // TODO BLASTING the sequence starts here
 
   var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
@@ -61,7 +74,7 @@ app.post('/', function(req, res) {
 
       resp.on('end', function () {
 
-        console.log(dataStr);
+        //console.log(dataStr);
 
         var resObj = JSON.parse(dataStr);
         solrResponse['respBody'] = resObj;

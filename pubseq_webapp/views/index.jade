@@ -334,6 +334,13 @@ html
 
         $("#seqform").on("submit", function(ev) {
 
+          var worker = new Worker("worker.js");
+          worker.onmessage = function(e) {
+            console.log('Message received from worker. Message is:');
+            console.log(e.data);
+          }
+          worker.postMessage(["foo", "bar"]);
+
           // get the value of textarea
           var text = $("#seq");
 
