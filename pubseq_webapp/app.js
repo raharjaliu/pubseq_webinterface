@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.set('views', './views');
 app.set('view engine', 'jade');
 
-String.prototype.hashCode = function(){
+String.prototype.absHashCode = function(){
     var hash = 0;
     if (this.length == 0) return hash;
     for (i = 0; i < this.length; i++) {
@@ -25,7 +25,7 @@ String.prototype.hashCode = function(){
         hash = ((hash<<5)-hash)+char;
         hash = hash & hash; // Convert to 32bit integer
     }
-    return hash;
+    return Math.abs(hash);
 }
 
 // logs execution and its corresponding properties (stdout, stderr, error) onto the server console
@@ -62,51 +62,13 @@ app.post('/', function(req, res) {
 
   var postResponse = {};
 
-  if (req.body.mode === 'update') {
-    // UPDATE mode
-    // TODO
+  if (req.body.mode == 'new') {
 
-  } else if (req.body.mode == 'check') {
-    // CHECK mode
-    // TODO
+    console.log("NEW");
 
-    var outFile = req.body.id + '.out';
-    var checkOutFile = 'ls blast/' + outFile;
-    console.log(checkOutFile);
-    exec(checkOutFile, function(error, stdout, stderr){
-    logStoutSterrErr(checkOutFile, stdout, stderr, error);
-
-      if (stdout.length > 0) {
-
-        var checkNumOflines = 'wc -l blast/' + outFile;
-        exec(checkNumOflines, function(error, stdout, stderr) {
-          logStoutSterrErr(checkNumOfline, stdout, stderr, error);
-          var split = (stdout.trim()).split();
-          var numOflines = parseInt(split[0]);
-
-          if (numOflines > 0) {
-
-            var array = fs.readFileSync('blast/' + outFile).toString().split("\n");
-            for(i in array) {
-              console.log(array[i]);
-            }
-
-          } else {
-            postResponse['id'] = req.body.id;
-            postResponse['status'] = 'running';
-            res.json(postResponse);
-          }
-        });
-      } else {
-        postResponse['id'] = req.body.id;
-        postResponse['status'] = 'running';
-        res.json(postResponse);
-      }
-    });
-
-  } else {
     // NEW mode
-    // TODO
+
+    actionCode = 0;
 
     var testSeq = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
       "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
@@ -117,14 +79,14 @@ app.post('/', function(req, res) {
       "GSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
 
     //var content = JSON.stringify(req.body);
-    content = testSeq;
-    var fileIn = content.hashCode() + ".in";
-    var fileOut = content.hashCode() + ".out";
-    var fileScript = 'blast_' + content.hashCode() + ".sh";
+    content = req.body.sequence;
+    var fileIn = content.absHashCode() + ".in";
+    var fileOut = content.absHashCode() + ".out";
+    var fileScript = 'blast_' + content.absHashCode() + ".sh";
     exec('pwd', function(error, stdout, stderr) {
       logStoutSterrErr('pwd', stdout, stderr, error);
       var pwd = stdout.trim();
-      var createFile = "echo '> input_" + content.hashCode() + "\n" + content + "' > blast/" + fileIn;
+      var createFile = "echo '> input_" + content.absHashCode() + "\n" + content + "' > blast/" + fileIn;
       exec(createFile, function(error, stdout, stderr) {
         logStoutSterrErr(createFile, stdout, stderr, error);
         var chmodFile = 'chmod 775 blast/' + fileIn;
@@ -140,53 +102,118 @@ app.post('/', function(req, res) {
               exec(qsubScript, function(error, stdout, stderr, error) {
                 logStoutSterrErr(qsubScript, stdout, stderr, error);
                 postResponse['status'] = 'submitted';
-                postResponse['id'] = content.hashCode();
-
-
-                // TODO move part bellow to post-BLAST Solr query
-
-                var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
-                  req.body.query +
-                  '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
-                  req.body.cursorMark;
-                postResponse['query'] = req.body.query;
-
-                http.get(solrQueryComplete, function(resp) {
-
-                  console.log('Got response from Solr index');
-                  var dataStr = '';
-
-                  resp.on("data", function(chunk) {
-
-                    // 0 indicates success
-                    postResponse['solrStatus'] = 0;
-                    dataStr += chunk;
-
-                  });
-
-                  resp.on('end', function() {
-
-                    //console.log(dataStr);
-                    var resObj = JSON.parse(dataStr);
-                    postResponse['respBody'] = resObj;
-                    res.json(postResponse);
-
-                  });
-
-                }).on('error', function(e) {
-
-                  console.log('Got error from Solr index');
-                  // any status > 0 indicates failure
-                  postResponse['solrStatus'] = 1;
-                  //console.log(e);
-                  res.json(postResponse);
-                });
+                postResponse['id'] = content.absHashCode();
+                res.json(postResponse);
               });
             });
           });
         });
       });
     });
+  } else {
+
+    var query;
+    var cursorMark;
+    var querySolr = false;
+
+    if (req.body.mode === 'update') {
+      // UPDATE mode
+
+      query = req.body.query;
+      cursorMark = req.body.cursorMark;
+
+      querySolr = true;
+
+    } else if (req.body.mode == 'check') {
+      // CHECK mode
+
+      var outFile = req.body.id + '.out';
+      var checkOutFile = 'ls blast/' + outFile;
+      console.log(checkOutFile);
+      exec(checkOutFile, function(error, stdout, stderr) {
+        logStoutSterrErr(checkOutFile, stdout, stderr, error);
+
+        if (stdout.length > 0) {
+          // output file exists
+          var checkNumOflines = 'wc -l blast/' + outFile;
+          exec(checkNumOflines, function(error, stdout, stderr) {
+            logStoutSterrErr(checkNumOflines, stdout, stderr, error);
+            console.log(stdout);
+            var split = (stdout.trim()).split();
+            var numOflines = parseInt(split[0]);
+
+            if (numOflines > 0) {
+              // output file exists and not empty
+              query = '';
+              var array = fs.readFileSync('blast/' + outFile).toString().split("\n");
+              var counter = 0;
+              for (var i = 0; i < Math.min(5, array.length); i++) {
+                var line = array[i];
+                var entries = line.split('|');
+                if (i > 0) {
+                  query += ' OR ';
+                }
+                query += ('uniprotid:' + entries[2]);
+              }
+              cursorMark = '*';
+              querySolr = true;
+              postResponsep['status'] = 'done';
+            } else {
+              // output file exists but empty
+              postResponse['id'] = req.body.id;
+              postResponse['status'] = 'running';
+              res.json(postResponse);
+            }
+          });
+        } else {
+          // output file doesn't exist
+          postResponse['id'] = req.body.id;
+          postResponse['status'] = 'running';
+          res.json(postResponse);
+        }
+      });
+    }
+
+    if (actionCode == 1) {
+
+    }
+
+    var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+      query +
+      '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
+      cursorMark;
+    postResponse['query'] = query;
+
+    http.get(solrQueryComplete, function(resp) {
+
+      console.log('Got response from Solr index');
+      var dataStr = '';
+
+      resp.on("data", function(chunk) {
+
+        // 0 indicates success
+        postResponse['solrStatus'] = 0;
+        dataStr += chunk;
+
+      });
+
+      resp.on('end', function() {
+
+        //console.log(dataStr);
+        var resObj = JSON.parse(dataStr);
+        postResponse['respBody'] = resObj;
+        res.json(postResponse);
+
+      });
+
+    }).on('error', function(e) {
+      console.log('Got error from Solr index');
+      // any status > 0 indicates failure
+      postResponse['solrStatus'] = 1;
+      //console.log(e);
+      res.json(postResponse);
+    });
+
   }
 });
 
