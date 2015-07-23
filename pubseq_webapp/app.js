@@ -63,12 +63,6 @@ app.get('/', function(req, res) {
 app.post('/', function(req, res) {
 
   var postResponse = {};
-  var querySolr = false;
-  var query;
-  var cursorMark;
-
-  console.log("incoming POST");
-  console.log(req.body.mode);
 
   if (req.body.mode == 'new') {
 
@@ -120,20 +114,53 @@ app.post('/', function(req, res) {
     });
   } else {
 
+    var query;
+    var cursorMark;
+
     if (req.body.mode === 'update') {
       // UPDATE mode
-
-      console.log("UPDATE");
 
       query = req.body.query;
       cursorMark = req.body.cursorMark;
 
-      querySolr = true;
+      var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+        query +
+        '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
+        cursorMark;
+      postResponse['query'] = query;
+
+      http.get(solrQueryComplete, function(resp) {
+
+        console.log('Got response from Solr index');
+        var dataStr = '';
+
+        resp.on("data", function(chunk) {
+
+          // 0 indicates success
+          postResponse['solrStatus'] = 0;
+          dataStr += chunk;
+
+        });
+
+        resp.on('end', function() {
+
+          //console.log(dataStr);
+          var resObj = JSON.parse(dataStr);
+          postResponse['respBody'] = resObj;
+          res.json(postResponse);
+
+        });
+
+      }).on('error', function(e) {
+        console.log('Got error from Solr index');
+        // any status > 0 indicates failure
+        postResponse['solrStatus'] = 1;
+        //console.log(e);
+        res.json(postResponse);
+      });
 
     } else if (req.body.mode == 'check') {
       // CHECK mode
-
-      console.log("CHECK");
 
       var outFile = req.body.id + '.out';
       var checkOutFile = 'ls blast/' + outFile;
@@ -171,14 +198,41 @@ app.post('/', function(req, res) {
               postResponse['status'] = 'done';
 
               query = encodeURIComponent(query);
-              console.log("query is")
-              console.log(query);
+
+              http.get(solrQueryComplete, function(resp) {
+
+                console.log('Got response from Solr index');
+                var dataStr = '';
+
+                resp.on("data", function(chunk) {
+
+                  // 0 indicates success
+                  postResponse['solrStatus'] = 0;
+                  dataStr += chunk;
+
+                });
+
+                resp.on('end', function() {
+
+                  //console.log(dataStr);
+                  var resObj = JSON.parse(dataStr);
+                  postResponse['respBody'] = resObj;
+                  res.json(postResponse);
+
+                });
+
+              }).on('error', function(e) {
+                console.log('Got error from Solr index');
+                // any status > 0 indicates failure
+                postResponse['solrStatus'] = 1;
+                //console.log(e);
+                res.json(postResponse);
+              });
             } else {
               // output file exists but empty
               postResponse['id'] = req.body.id;
               postResponse['status'] = 'running';
               res.json(postResponse);
-              return;
             }
           });
         } else {
@@ -186,57 +240,49 @@ app.post('/', function(req, res) {
           postResponse['id'] = req.body.id;
           postResponse['status'] = 'running';
           res.json(postResponse);
-          return;
         }
       });
     }
-  }
 
-  consoke.log("querySolr");
-  console.log(querySolr);
+    /*
+    if (querySolr) {
+      var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+        query +
+        '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
+        cursorMark;
+      postResponse['query'] = query;
 
-  if (querySolr) {
-    console.log(querySolr);
-    var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
-      query +
-      '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
-      cursorMark;
-    postResponse['query'] = query;
+      http.get(solrQueryComplete, function(resp) {
 
-    console.log(solrQueryComplete);
+        console.log('Got response from Solr index');
+        var dataStr = '';
 
-    http.get(solrQueryComplete, function(resp) {
+        resp.on("data", function(chunk) {
 
-      console.log('Got response from Solr index');
-      var dataStr = '';
+          // 0 indicates success
+          postResponse['solrStatus'] = 0;
+          dataStr += chunk;
 
-      resp.on("data", function(chunk) {
+        });
 
-        // 0 indicates success
-        postResponse['solrStatus'] = 0;
-        dataStr += chunk;
+        resp.on('end', function() {
 
-      });
+          //console.log(dataStr);
+          var resObj = JSON.parse(dataStr);
+          postResponse['respBody'] = resObj;
+          res.json(postResponse);
 
-      resp.on('end', function() {
+        });
 
-        //console.log(dataStr);
-        var resObj = JSON.parse(dataStr);
-        postResponse['respBody'] = resObj;
-        res.json(postResponse);
-        return;
-      });
-
-      resp.on('error', function(e){
+      }).on('error', function(e) {
         console.log('Got error from Solr index');
         // any status > 0 indicates failure
         postResponse['solrStatus'] = 1;
         //console.log(e);
         res.json(postResponse);
-        return;
       });
-
-    });
+    }
+    */
   }
 });
 
