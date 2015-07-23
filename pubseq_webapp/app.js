@@ -59,7 +59,7 @@ app.get('/', function(req, res) {
 // POST handler for '/'
 app.post('/', function(req, res) {
 
-  //exec("echo " + JSON.stringify(req.body); + " > blast/test.in");
+  var solrResponse = {};
 
   var testSeq = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
                 "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
@@ -89,57 +89,57 @@ app.post('/', function(req, res) {
           var chmodScript = 'chmod 775 blast/' + fileScript;
           exec(chmodScript, function(error, stdout, stderr, error) {
             logStoutSterrErr(chmodScript, stdout, stderr, error);
+            var qsubScript = 'qsub blast/' + fileScript;
+            exec(qsubScript, function(error, stdout, stderr, error) {
+              logStoutSterrErr(qsubScript, stdout, stderr, error);
+              solrResponse['status'] = 'submit';
+              solrResponse['id'] = content.hashCode();
+
+              var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
+                req.body.query + 
+                '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
+                req.body.cursorMark;
+              solrResponse['query'] = req.body.query;
+
+              console.log(solrQueryComplete);
+
+              http.get(solrQueryComplete, function(resp) {
+
+                  console.log('Got response from Solr index');
+                  var dataStr = '';
+
+                  resp.on("data", function(chunk) {
+
+                    // 0 indicates success
+                    solrResponse['solrStatus'] = 0;
+                    dataStr += chunk;
+
+                  });
+
+                resp.on('end', function () {
+
+                  //console.log(dataStr);
+                  var resObj = JSON.parse(dataStr);
+                  solrResponse['respBody'] = resObj;
+                  res.json(solrResponse);
+
+                });
+
+              }).on('error', function(e){
+
+                console.log('Got error from Solr index');
+                // any status > 0 indicates failure
+                solrResponse['solrStatus'] = 1;
+                //console.log(e);
+                res.json(solrResponse);
+              });
+            });
           }); 
         });
       });
     });
   }); 
-  
 
-  // TODO BLASTING the sequence starts here
-
-  var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
-                          req.body.query + 
-                          '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
-                          req.body.cursorMark;
-  var solrResponse = {};
-  solrResponse['query'] = req.body.query;
-
-  console.log(solrQueryComplete);
-
-  http.get(
-    solrQueryComplete,
-    function(resp) {
-
-      console.log('Got response from Solr index');
-      var dataStr = '';
-
-      resp.on("data", function(chunk) {
-
-        // 0 indicates success
-        solrResponse['status'] = 0;
-
-        dataStr += chunk;
-      });
-
-      resp.on('end', function () {
-
-        //console.log(dataStr);
-
-        var resObj = JSON.parse(dataStr);
-        solrResponse['respBody'] = resObj;
-        res.json(solrResponse);
-
-      });
-
-    }).on('error', function(e){
-
-      console.log('Got error from Solr index');
-      // any status > 0 indicates failure
-      solrResponse['status'] = 1;
-      //console.log(e);
-      res.json(solrResponse);
-    });
 });
 
 // GET handler for '/about'
