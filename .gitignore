@@ -4,6 +4,8 @@
 *.fasa
 # BLAST output files
 *.out
+# dynamically created scripts within BLAST directory
+/pubseq_webapp/blast/*.sh
 
 # Logs
 logs

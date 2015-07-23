@@ -61,7 +61,16 @@ app.post('/', function(req, res) {
 
   //exec("echo " + JSON.stringify(req.body); + " > blast/test.in");
 
-  var content = JSON.stringify(req.body);
+  var testSeq = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
+                "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
+                "SVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHE" +
+                "RCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNS" +
+                "SCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELP" +
+                "PGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPG" +
+                "GSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
+
+  //var content = JSON.stringify(req.body);
+  content = testSeq;
   var fileIn = content.hashCode() + ".in";
   var fileOut = content.hashCode() + ".out";
   var fileScript = 'blast_' + content.hashCode() + ".sh";
