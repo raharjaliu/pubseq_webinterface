@@ -146,16 +146,17 @@ app.post('/', function(req, res) {
 
             console.log("number of lines : " + numOflines);
             if (numOflines > 0) {
-              console.log("parsing files")
+              console.log("parsing files");
               // output file exists and not empty
               query = '';
               var array = fs.readFileSync('blast/' + outFile).toString().split("\n");
               var counter = 0;
               for (var i = 0; i < Math.min(5, array.length); i++) {
                 var line = array[i];
-                var entries = line.split('|');
+                var split = line.split('\t');
+                var entries = split[1].split('|');
                 if (i > 0) {
-                  query += ' OR ';
+                  query = ' OR ';
                 }
                 query += ('uniprotid:' + entries[2]);
               }
