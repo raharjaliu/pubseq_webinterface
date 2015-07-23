@@ -27,6 +27,15 @@ String.prototype.hashCode = function(){
     return hash;
 }
 
+// logs execution and its corresponding properties (stdout, stderr, error) onto the server console
+var logStoutSterrErr = function(exec, stout, sterr, err) {
+  console.log('execution: ' + exec);
+  console.log(' stdout: ' + stout);
+  console.log(' stderr: ' + sterr);
+  if (err !== null) {
+    console.log(' exec error: ' + err);
+  }
+}
 
 // defines server
 var server = app.listen(3000, function() {
@@ -53,23 +62,30 @@ app.post('/', function(req, res) {
   //exec("echo " + JSON.stringify(req.body); + " > blast/test.in");
 
   var content = JSON.stringify(req.body);
-  var fileName = content.hashCode() + ".in";
-  exec("echo '> input_" + content.hashCode() + "\n" + content + "' > blast/" + fileName, 
-    function(error, stdout, stderr) {
-      console.log('stdout exec1: ' + stdout);
-      console.log('stderr exec1: ' + stderr);
-      if (error !== null) {
-        console.log('exec error exec1: ' + error);
-      }
-      exec("chmod 775 blast/" + fileName, function(error, stdout, stderr) {
-        console.log('stdout exec1: ' + stdout);
-        console.log('stderr exec1: ' + stderr);
-        if (error !== null) {
-          console.log('exec error exec1: ' + error);
-        } 
+  var fileIn = content.hashCode() + ".in";
+  var fileOut = content.hashCode() + ".out";
+  var fileScript = content.hashCode() + ".sh";
+  exec('pwd', function(error, stdout, stderr) {
+    logStoutSterrErr('pwd', stdout, stderr, error);
+    var pwd = stdout.trim();
+    var createFile = "echo '> input_" + content.hashCode() + "\n" + content + "' > blast/" + fileIn; 
+    exec(createFile, function(error, stdout, stderr) {
+      logStoutSterrErr(createFile, stdout, stderr, error);
+      var chmodFile = 'chmod 775 blast/' + fileIn; 
+      exec(chmodFile, function(error, stdout, stderr) {
+        logStoutSterrErr(chmodFile, stdout, stderr, error);
+        var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/" + fileOut + " -m 16' > blast/" + fileScript; 
+        exec(createScript, function(error, stdout, stderr){
+          logStoutSterrErr(createScript, stdout, stderr, error);
+          var chmodScript = "chmod 775 blast/" + fileScript;
+          exec(chmodScript, function(error, stdout, stderr, error) {
+            logStoutSterrErr(chmodScript, stdout, stderr, error);
+          }); 
+        });
       });
-    }
-  );
+    });
+  }); 
+  
 
   // TODO BLASTING the sequence starts here
 
