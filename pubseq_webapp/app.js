@@ -74,7 +74,7 @@ app.post('/', function(req, res) {
       var chmodFile = 'chmod 775 blast/' + fileIn; 
       exec(chmodFile, function(error, stdout, stderr) {
         logStoutSterrErr(chmodFile, stdout, stderr, error);
-        var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/" + fileOut + " -m 16' > blast/" + fileScript; 
+        var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/blast/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/blast/" + fileOut + " -m 16' > blast/" + fileScript; 
         exec(createScript, function(error, stdout, stderr){
           logStoutSterrErr(createScript, stdout, stderr, error);
           var chmodScript = 'chmod 775 blast/' + fileScript;
