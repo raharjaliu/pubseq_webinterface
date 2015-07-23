@@ -159,7 +159,7 @@ app.post('/', function(req, res) {
               }
               cursorMark = '*';
               querySolr = true;
-              postResponsep['status'] = 'done';
+              postResponse['status'] = 'done';
             } else {
               // output file exists but empty
               postResponse['id'] = req.body.id;
