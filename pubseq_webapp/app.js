@@ -164,6 +164,7 @@ app.post('/', function(req, res) {
               querySolr = true;
               postResponse['status'] = 'done';
 
+              query = encodeURIComponent(query);
               console.log("query is")
               console.log(query);
             } else {
