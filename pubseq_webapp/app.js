@@ -38,7 +38,7 @@ app.get('/', function(req, res) {
 // POST handler for '/'
 app.post('/', function(req, res) {
 
-  exec('pwd', function(error, stdout, stderr) {
+  exec('touch blast/test.in', function(error, stdout, stderr) {
     console.log('stdout: ' + stdout);
     console.log('stderr: ' + stderr);
     if (error !== null) {
