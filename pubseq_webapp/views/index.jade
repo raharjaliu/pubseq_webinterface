@@ -6,7 +6,7 @@ html
     script(type="text/javascript", src="//fgnass.github.io/spin.js/spin.js")
     style.
       span.pmid { color:#005266 }
-      span.journal { color:#005266 }
+      a.journal { color:#005266 }
     script.
 
       var queryResults;
@@ -105,6 +105,7 @@ html
           docTitle.appendChild(h3Title);
           results.appendChild(docTitle);
 
+          var aAuthJournal = document.createElement("a");
           var author = "";
           var auths = article["authors"];
 
@@ -123,9 +124,9 @@ html
           var authoText = document.createTextNode(author);
           var authP = document.createElement("p");
           authP.appendChild(authoText);
-          results.appendChild(authP);
+          aTitle.appendChild(authP);
 
-          var journal = document.createElement("span");
+          var journal = document.createElement("a");
           journal.setAttribute("class", "journal");
           journal.innerHTML = article["jornal"];
           console.log("journal is " + article["journal"]);
