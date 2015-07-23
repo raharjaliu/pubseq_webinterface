@@ -141,9 +141,10 @@ app.post('/', function(req, res) {
           exec(checkNumOflines, function(error, stdout, stderr) {
             logStoutSterrErr(checkNumOflines, stdout, stderr, error);
             console.log(stdout);
-            var split = (stdout.trim()).split();
+            var split = (stdout.trim()).split(" ");
             var numOflines = parseInt(split[0]);
 
+            console.log("number of lines : " + numOflines);
             if (numOflines > 0) {
               // output file exists and not empty
               query = '';
