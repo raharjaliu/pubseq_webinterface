@@ -146,6 +146,7 @@ app.post('/', function(req, res) {
 
             console.log("number of lines : " + numOflines);
             if (numOflines > 0) {
+              console.log("parsing files")
               // output file exists and not empty
               query = '';
               var array = fs.readFileSync('blast/' + outFile).toString().split("\n");
@@ -161,6 +162,9 @@ app.post('/', function(req, res) {
               cursorMark = '*';
               querySolr = true;
               postResponse['status'] = 'done';
+
+              console.log("query is")
+              console.log(query);
             } else {
               // output file exists but empty
               postResponse['id'] = req.body.id;
