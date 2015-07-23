@@ -4,6 +4,7 @@ var bodyParser = require('body-parser');
 var app = express();
 var http = require('http');
 var exec = require('child_process').exec;
+var fs = require('fs');
 
 // defines default path
 app.use(express.static(path.join(__dirname, 'public')));
@@ -59,51 +60,98 @@ app.get('/', function(req, res) {
 // POST handler for '/'
 app.post('/', function(req, res) {
 
-  var solrResponse = {};
+  var postResponse = {};
 
-  var testSeq = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
-                "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
-                "SVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHE" +
-                "RCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNS" +
-                "SCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELP" +
-                "PGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPG" +
-                "GSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
+  if (req.body.mode === 'update') {
+    // UPDATE mode
+    // TODO
 
-  //var content = JSON.stringify(req.body);
-  content = testSeq;
-  var fileIn = content.hashCode() + ".in";
-  var fileOut = content.hashCode() + ".out";
-  var fileScript = 'blast_' + content.hashCode() + ".sh";
-  exec('pwd', function(error, stdout, stderr) {
-    logStoutSterrErr('pwd', stdout, stderr, error);
-    var pwd = stdout.trim();
-    var createFile = "echo '> input_" + content.hashCode() + "\n" + content + "' > blast/" + fileIn; 
-    exec(createFile, function(error, stdout, stderr) {
-      logStoutSterrErr(createFile, stdout, stderr, error);
-      var chmodFile = 'chmod 775 blast/' + fileIn; 
-      exec(chmodFile, function(error, stdout, stderr) {
-        logStoutSterrErr(chmodFile, stdout, stderr, error);
-        var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/blast/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/blast/" + fileOut + " -m 16' > blast/" + fileScript; 
-        exec(createScript, function(error, stdout, stderr){
-          logStoutSterrErr(createScript, stdout, stderr, error);
-          var chmodScript = 'chmod 775 blast/' + fileScript;
-          exec(chmodScript, function(error, stdout, stderr, error) {
-            logStoutSterrErr(chmodScript, stdout, stderr, error);
-            var qsubScript = 'qsub blast/' + fileScript;
-            exec(qsubScript, function(error, stdout, stderr, error) {
-              logStoutSterrErr(qsubScript, stdout, stderr, error);
-              solrResponse['status'] = 'submit';
-              solrResponse['id'] = content.hashCode();
+  } else if (req.body.mode == 'check') {
+    // CHECK mode
+    // TODO
 
-              var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
-                req.body.query + 
-                '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
-                req.body.cursorMark;
-              solrResponse['query'] = req.body.query;
+    var outFile = req.body.id + '.out';
+    var checkOutFile = 'ls blast/' + outFile;
+    console.log(checkOutFile);
+    exec(checkOutFile, function(error, stdout, stderr){
+    logStoutSterrErr(checkOutFile, stdout, stderr, error);
 
-              console.log(solrQueryComplete);
+      if (stdout.length > 0) {
 
-              http.get(solrQueryComplete, function(resp) {
+        var checkNumOflines = 'wc -l blast/' + outFile;
+        exec(checkNumOflines, function(error, stdout, stderr) {
+          logStoutSterrErr(checkNumOfline, stdout, stderr, error);
+          var split = (stdout.trim()).split();
+          var numOflines = parseInt(split[0]);
+
+          if (numOflines > 0) {
+
+            var array = fs.readFileSync('blast/' + outFile).toString().split("\n");
+            for(i in array) {
+              console.log(array[i]);
+            }
+
+          } else {
+            postResponse['id'] = req.body.id;
+            postResponse['status'] = 'running';
+            res.json(postResponse);
+          }
+        });
+      } else {
+        postResponse['id'] = req.body.id;
+        postResponse['status'] = 'running';
+        res.json(postResponse);
+      }
+    });
+
+  } else {
+    // NEW mode
+    // TODO
+
+    var testSeq = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
+      "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
+      "SVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHE" +
+      "RCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNS" +
+      "SCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELP" +
+      "PGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPG" +
+      "GSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
+
+    //var content = JSON.stringify(req.body);
+    content = testSeq;
+    var fileIn = content.hashCode() + ".in";
+    var fileOut = content.hashCode() + ".out";
+    var fileScript = 'blast_' + content.hashCode() + ".sh";
+    exec('pwd', function(error, stdout, stderr) {
+      logStoutSterrErr('pwd', stdout, stderr, error);
+      var pwd = stdout.trim();
+      var createFile = "echo '> input_" + content.hashCode() + "\n" + content + "' > blast/" + fileIn;
+      exec(createFile, function(error, stdout, stderr) {
+        logStoutSterrErr(createFile, stdout, stderr, error);
+        var chmodFile = 'chmod 775 blast/' + fileIn;
+        exec(chmodFile, function(error, stdout, stderr) {
+          logStoutSterrErr(chmodFile, stdout, stderr, error);
+          var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/blast/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/blast/" + fileOut + " -m 8' > blast/" + fileScript;
+          exec(createScript, function(error, stdout, stderr) {
+            logStoutSterrErr(createScript, stdout, stderr, error);
+            var chmodScript = 'chmod 775 blast/' + fileScript;
+            exec(chmodScript, function(error, stdout, stderr, error) {
+              logStoutSterrErr(chmodScript, stdout, stderr, error);
+              var qsubScript = 'qsub blast/' + fileScript;
+              exec(qsubScript, function(error, stdout, stderr, error) {
+                logStoutSterrErr(qsubScript, stdout, stderr, error);
+                postResponse['status'] = 'submitted';
+                postResponse['id'] = content.hashCode();
+
+
+                // TODO move part bellow to post-BLAST Solr query
+
+                var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+                  req.body.query +
+                  '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
+                  req.body.cursorMark;
+                postResponse['query'] = req.body.query;
+
+                http.get(solrQueryComplete, function(resp) {
 
                   console.log('Got response from Solr index');
                   var dataStr = '';
@@ -111,35 +159,35 @@ app.post('/', function(req, res) {
                   resp.on("data", function(chunk) {
 
                     // 0 indicates success
-                    solrResponse['solrStatus'] = 0;
+                    postResponse['solrStatus'] = 0;
                     dataStr += chunk;
 
                   });
 
-                resp.on('end', function () {
+                  resp.on('end', function() {
 
-                  //console.log(dataStr);
-                  var resObj = JSON.parse(dataStr);
-                  solrResponse['respBody'] = resObj;
-                  res.json(solrResponse);
+                    //console.log(dataStr);
+                    var resObj = JSON.parse(dataStr);
+                    postResponse['respBody'] = resObj;
+                    res.json(postResponse);
 
+                  });
+
+                }).on('error', function(e) {
+
+                  console.log('Got error from Solr index');
+                  // any status > 0 indicates failure
+                  postResponse['solrStatus'] = 1;
+                  //console.log(e);
+                  res.json(postResponse);
                 });
-
-              }).on('error', function(e){
-
-                console.log('Got error from Solr index');
-                // any status > 0 indicates failure
-                solrResponse['solrStatus'] = 1;
-                //console.log(e);
-                res.json(solrResponse);
               });
             });
-          }); 
+          });
         });
       });
     });
-  }); 
-
+  }
 });
 
 // GET handler for '/about'
