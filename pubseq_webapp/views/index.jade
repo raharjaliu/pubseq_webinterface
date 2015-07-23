@@ -118,7 +118,7 @@ html
           } else {
             author = auths[0] + " et al.";
           }
-          author += ".";
+          author += ". ";
 
           var authoText = document.createTextNode(author);
           var authP = document.createElement("p");
@@ -127,7 +127,7 @@ html
 
           var journal = document.createElement("span");
           journal.setAttribute("class", "journal");
-          journal.innerHTML = " " + article["jornal"];
+          journal.innerHTML = article["jornal"];
           console.log("journal is " + article["journal"]);
           console.log(journal);
           authP.appendChild(journal);
