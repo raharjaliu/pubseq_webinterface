@@ -218,11 +218,10 @@ app.post('/', function(req, res) {
 
                 resp.on('end', function() {
 
-                  //console.log(dataStr);
+                  console.log(dataStr);
                   var resObj = JSON.parse(dataStr);
                   postResponse['respBody'] = resObj;
                   res.json(postResponse);
-
                 });
 
               }).on('error', function(e) {
