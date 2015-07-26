@@ -64,7 +64,7 @@ app.post('/', function(req, res) {
 
   var postResponse = {};
 
-  if (req.body.mode == 'new') {
+  if (req.body.mode === 'new') {
 
     console.log("NEW");
 
@@ -81,14 +81,23 @@ app.post('/', function(req, res) {
       "GSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
 
     //var content = JSON.stringify(req.body);
-    content = req.body.sequence;
-    var fileIn = content.absHashCode() + ".in";
-    var fileOut = content.absHashCode() + ".out";
-    var fileScript = 'blast_' + content.absHashCode() + ".sh";
+    var input = req.body.text;
+    var content;
+    var sequence;
+    if (input.startsWith(">")) {
+      sequence =  input.split("\n")[1];
+      content = input;
+    } else {
+      sequence = input;
+      content = "> input_" + sequence.absHashCode() + "\n" + content;
+    }
+    var fileIn = sequence.absHashCode() + ".in";
+    var fileOut = sequence.absHashCode() + ".out";
+    var fileScript = 'blast_' + sequence.absHashCode() + ".sh";
     exec('pwd', function(error, stdout, stderr) {
       logStoutSterrErr('pwd', stdout, stderr, error);
       var pwd = stdout.trim();
-      var createFile = "echo '> input_" + content.absHashCode() + "\n" + content + "' > blast/" + fileIn;
+      var createFile = "echo '" + content + "' > blast/" + fileIn;
       exec(createFile, function(error, stdout, stderr) {
         logStoutSterrErr(createFile, stdout, stderr, error);
         var chmodFile = 'chmod 775 blast/' + fileIn;
@@ -104,7 +113,7 @@ app.post('/', function(req, res) {
               exec(qsubScript, function(error, stdout, stderr, error) {
                 logStoutSterrErr(qsubScript, stdout, stderr, error);
                 postResponse['status'] = 'submitted';
-                postResponse['id'] = content.absHashCode();
+                postResponse['id'] = sequence.absHashCode();
                 res.json(postResponse);
               });
             });

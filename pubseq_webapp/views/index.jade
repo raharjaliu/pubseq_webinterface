@@ -373,9 +373,8 @@ html
             method: "POST",
             url:" /",
             data: {
-              // TODO change 'query' value to '*' and add 'sequence' key which will be BLASTed on Node server
               "query": encodeURIComponent(text.val()),
-              "sequence": text.val(),
+              "text": text.val(),
               /*
                 mode defines the behaviour of query:
                 - 'new' means it's starting query
