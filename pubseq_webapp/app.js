@@ -91,6 +91,12 @@ app.post('/', function(req, res) {
       sequence = input;
       content = "> input_" + sequence.absHashCode() + "\n" + content;
     }
+    console.log("input is ");
+    console.log(input);
+    console.log("sequence is ");
+    console.log(sequence);
+    console.log("content is");
+    console.log(content);
     var fileIn = sequence.absHashCode() + ".in";
     var fileOut = sequence.absHashCode() + ".out";
     var fileScript = 'blast_' + sequence.absHashCode() + ".sh";
