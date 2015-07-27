@@ -19,6 +19,10 @@ app.use(bodyParser.urlencoded({
 app.set('views', './views');
 app.set('view engine', 'jade');
 
+// Java-like hash code implementation. NOTE THAT
+// this implementation slightly differs from Java
+// one in the way that this implementation
+// takes the absolute value of negative hash codes
 String.prototype.absHashCode = function() {
   var hash = 0;
   if (this.length == 0) return hash;
@@ -28,6 +32,16 @@ String.prototype.absHashCode = function() {
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash);
+}
+
+// simple startsWith implementation for String.
+// NOTE THAT according to newest ECMAScript 2015
+// Standard (ES6) startsWith will be natively
+// supported for string
+if (typeof String.prototype.startsWith != 'function') {
+  String.prototype.startsWith = function (str){
+    return this.slice(0, str.length) == str;
+  };
 }
 
 // logs execution and its corresponding properties (stdout, stderr, error) onto the server console
@@ -70,14 +84,12 @@ app.post('/', function(req, res) {
 
     // NEW mode
 
-    actionCode = 0;
-
     var input = req.body.input;
-    console.log()
     var content;
     var sequence;
     if (input.startsWith(">") || input.startsWith(";")) {
       sequence = input.split("\n")[1];
+      console.log(sequence);
       content = input;
     } else {
       sequence = input;
