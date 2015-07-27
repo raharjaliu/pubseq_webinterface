@@ -30,12 +30,6 @@ String.prototype.absHashCode = function() {
   return Math.abs(hash);
 }
 
-if (typeof String.prototype.startsWith != 'function') {
-  String.prototype.startsWith = function (str){
-    return this.slice(0, str.length) == str;
-  };
-}
-
 // logs execution and its corresponding properties (stdout, stderr, error) onto the server console
 var logStoutSterrErr = function(exec, stout, sterr, err) {
   console.log('execution: ' + exec);
@@ -73,21 +67,30 @@ app.post('/', function(req, res) {
   if (req.body.mode === 'new') {
 
     console.log("NEW");
+
     // NEW mode
 
     actionCode = 0;
 
     var input = req.body.input;
+    console.log()
     var content;
     var sequence;
-    if (input.startsWith(">")) {
-      var arr = input.split("\n");
-      sequence =  arr[1];
+    if (input.startsWith(">") || input.startsWith(";")) {
+      var arr = input.split("\n")[1]
+      console.log(arr);
+      sequence =  ;
       content = input;
     } else {
       sequence = input;
       content = "> input_" + sequence.absHashCode() + "\n" + content;
     }
+    console.log("input is ");
+    console.log(input);
+    console.log("sequence is ");
+    console.log(sequence);
+    console.log("content is");
+    console.log(content);
     var fileIn = sequence.absHashCode() + ".in";
     var fileOut = sequence.absHashCode() + ".out";
     var fileScript = 'blast_' + sequence.absHashCode() + ".sh";
