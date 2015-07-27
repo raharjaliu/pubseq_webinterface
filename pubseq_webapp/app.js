@@ -77,9 +77,7 @@ app.post('/', function(req, res) {
     var content;
     var sequence;
     if (input.startsWith(">") || input.startsWith(";")) {
-      var arr = input.split("\n")[1]
-      console.log(arr);
-      sequence =  ;
+      sequence = input.split("\n")[1];
       content = input;
     } else {
       sequence = input;
