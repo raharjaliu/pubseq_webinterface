@@ -89,11 +89,10 @@ app.post('/', function(req, res) {
     var sequence;
     if (input.startsWith(">") || input.startsWith(";")) {
       sequence = input.split("\n")[1];
-      console.log(sequence);
       content = input;
     } else {
       sequence = input;
-      content = "> input_" + sequence.absHashCode() + "\n" + content;
+      content = "> input_" + sequence.absHashCode() + "\n" + input;
     }
     console.log("input is ");
     console.log(input);
