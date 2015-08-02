@@ -217,7 +217,7 @@ app.post('/', function(req, res) {
               cursorMark = '*';
               query = encodeURIComponent(query);
 
-              var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
+              var solrQueryComplete = 'http://jobtest2:8983/solr/pubseq/select?wt=json&indent=true&q=' + 
                                       query +
                                       '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
                                       cursorMark;
