@@ -168,7 +168,7 @@ app.post('/', function(req, res) {
       // sequence is contained in cache
 
       var query = createQuery(value);
-      var solrQueryComplete = 'http://jobtest:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+      var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
         query +
         '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=*';
       postResponse['query'] = query;
@@ -221,7 +221,7 @@ app.post('/', function(req, res) {
       query = req.body.query;
       cursorMark = req.body.cursorMark;
 
-      var solrQueryComplete = 'http://jobtest:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+      var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
         query +
         '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
         cursorMark;
@@ -327,7 +327,7 @@ app.post('/', function(req, res) {
               console.log(listOfUPIDs);
               myCache.set(req.body.sequence, listOfUPIDs);
 
-              var solrQueryComplete = 'http://jobtest:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+              var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
                 query +
                 '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=' +
                 cursorMark;
