@@ -296,7 +296,7 @@ app.post('/', function(req, res) {
                   query += ' OR ';
                 }
                 query += ('uniprotid:' + entries[2]);
-                listOfUPIDs.append(entries[2]);
+                listOfUPIDs.push(entries[2]);
               }
 
               // remove BLAST input file
