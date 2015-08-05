@@ -392,7 +392,6 @@ html
                 recurseWait(data.sequence, data.id, "*");
               } else {
                 console.log("POST succees!");
-                curPage = pageNum;
                 var nodeResp = JSON.stringify(data, null, 2);
                 resetQueryResults(data["query"]); 
                 handleReturnData(data);
