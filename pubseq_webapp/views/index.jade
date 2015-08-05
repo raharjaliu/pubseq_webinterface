@@ -234,7 +234,7 @@ html
         console.log(queryResults);
       }
 
-      function recurseWait(id, cursorMark) {
+      function recurseWait(sequence, id, cursorMark) {
         setTimeout(function(){
           $.ajax({
             method: "POST",
@@ -242,14 +242,15 @@ html
             data: {
               "mode": "check",
               "id": id,
-              "cursorMark": cursorMark
+              "cursorMark": cursorMark,
+              "sequence": sequence
             },
             dataType: "json",
             success: function(data, textStatus) {
               console.log(data);
               if (data.status === "running") {
                 console.log("RECURSE");
-                recurseWait(data.id);
+                recurseWait(data.sequence, data.id, cursorMark);
               } else {
                 console.log("POST succees!");
                 var nodeResp = JSON.stringify(data, null, 2);
@@ -388,7 +389,7 @@ html
 
               if (data.status !== "done") {
                 console.log("RECURSE");
-                recurseWait(data.id, "*");
+                recurseWait(data.sequence, data.id, "*");
               } else {
                 console.log("POST succees!");
                 curPage = pageNum;
