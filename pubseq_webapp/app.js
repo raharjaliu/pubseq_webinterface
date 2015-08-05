@@ -306,7 +306,7 @@ app.post('/', function(req, res) {
               });
 
               // remove BLAST output file
-              var removeBlastIn = 'rm -f blast/' + outFile;
+              var removeBlastOut = 'rm -f blast/' + outFile;
               exec(removeBlastOut, function(error, stdout, stderr){
                 logStoutSterrErr(removeBlastOut, stdout, stderr, error);
               });
