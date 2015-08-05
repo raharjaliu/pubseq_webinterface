@@ -321,6 +321,10 @@ app.post('/', function(req, res) {
               query = encodeURIComponent(query);
 
               // add list of uniprot id to cache
+              console.log("req.body.sequence is ");
+              console.log(req.body.sequence);
+              console.log("list of upid is");
+              console.log(listOfUPIDs);
               myCache.set(req.body.sequence, listOfUPIDs);
 
               var solrQueryComplete = 'http://jobtest:8983/solr/pubseq/select?wt=json&indent=true&q=' +
@@ -361,6 +365,7 @@ app.post('/', function(req, res) {
             } else {
               // output file exists but empty -> BLAST is not finished yet
               postResponse['id'] = req.body.id;
+              postResponse['sequence'] = req.body.sequence;
               postResponse['status'] = 'running';
               res.json(postResponse);
             }
