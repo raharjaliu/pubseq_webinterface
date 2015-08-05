@@ -368,7 +368,7 @@ app.post('/', function(req, res) {
         } else {
           // output file doesn't exist -> BLAST is not finished yet
           postResponse['id'] = req.body.id;
-          postResponse['sequence'] = res.body.sequence;
+          postResponse['sequence'] = req.body.sequence;
           postResponse['status'] = 'running';
           res.json(postResponse);
         }
