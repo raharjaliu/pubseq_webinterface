@@ -264,7 +264,7 @@ app.post('/', function(req, res) {
 
       var outFile = req.body.id + '.out';
       var inFile = req.body.id + '.in';
-      var scriptFile = 'blast_' + re.body.id + ".sh";
+      var scriptFile = 'blast_' + req.body.id + ".sh";
       var checkOutFile = 'ls blast/' + outFile;
       console.log(checkOutFile);
       exec(checkOutFile, function(error, stdout, stderr) {
