@@ -9,6 +9,76 @@ html
       span.pmid { color:#005266 }
       span.journal { color:#005266 }
     script.
+      // openPage is called by the button and thus should be outside
+      // jQuery definition area
+      function openPage(pageNum) {
+
+        //console.log("openPage()::pageNum is " + pageNum);
+
+        if (pageNum in queryResults) {
+          /*
+          if page was already queried, use already existing response
+          */
+          console.log("page was queried before!");
+
+          // update current page indicator
+          curPage = pageNum;
+
+          handleReturnData(queryResults["pages"][pageNum]["data"]);
+
+          // remove spinner
+
+        } else {
+          /*
+          otherwise, query the page on Solr index via Node
+          */
+          if(pageNum >= 0) {
+
+            var cursorMark;
+
+            if (pageNum == 0) {
+              cursorMark = "*";
+            } else {
+              cursorMark = encodeURIComponent(queryResults["pages"][pageNum - 1]["next"]);
+              console.log("cursorMark is " + cursorMark);
+            }
+
+            $.ajax({
+              method: "POST",
+              url:"/",
+              data: {
+                "query": queryResults["query"],
+                /*
+                  mode defines the behaviour of query:
+                  - 'new' means it's starting query
+                  - 'update' means subsequent query (page moving etc)
+                  in case of 'update' defines the page it request
+                  by adding another key 'cursorMark' defining the page it
+                  wants to go
+                */
+                "mode": "update",
+                "cursorMark": cursorMark
+              },
+              dataType: "json",
+              success: function(data, textStatus) {
+
+                var status = data.status;
+                console.log("POST succees!");
+                curPage = pageNum;
+                var nodeResp = JSON.stringify(data, null, 2);
+                console.log(nodeResp);
+                handleReturnData(data);
+              },
+              error: function(jqXHR, textStatus, errorThrown ) {
+              
+                console.log("Error %s: %s", errorThrown, textStatus);
+            
+              }
+            });
+          }
+        }
+      }
+
       // jQuery component of the web app
       $(function () {
 
@@ -274,79 +344,6 @@ html
             });
           }, 10000);
         }
-
-        function openPage(pageNum) {
-
-          //console.log("openPage()::pageNum is " + pageNum);
-
-          if (pageNum in queryResults) {
-            /*
-            if page was already queried, use already existing response
-            */
-            console.log("page was queried before!");
-
-            // update current page indicator
-            curPage = pageNum;
-
-            handleReturnData(queryResults["pages"][pageNum]["data"]);
-
-            // remove spinner
-            deactivateSpinner();
-
-          } else {
-            /*
-            otherwise, query the page on Solr index via Node
-            */
-            if(pageNum >= 0) {
-
-              var cursorMark;
-
-              if (pageNum == 0) {
-                cursorMark = "*";
-              } else {
-                cursorMark = encodeURIComponent(queryResults["pages"][pageNum - 1]["next"]);
-                console.log("cursorMark is " + cursorMark);
-              }
-
-              $.ajax({
-                method: "POST",
-                url:"/",
-                data: {
-                  "query": queryResults["query"],
-                  /*
-                    mode defines the behaviour of query:
-                    - 'new' means it's starting query
-                    - 'update' means subsequent query (page moving etc)
-                    in case of 'update' defines the page it request
-                    by adding another key 'cursorMark' defining the page it
-                    wants to go
-                  */
-                  "mode": "update",
-                  "cursorMark": cursorMark
-                },
-                dataType: "json",
-                success: function(data, textStatus) {
-
-                  var status = data.status;
-                  console.log("POST succees!");
-                  curPage = pageNum;
-                  var nodeResp = JSON.stringify(data, null, 2);
-                  console.log(nodeResp);
-                  handleReturnData(data);
-                  deactivateSpinner();
-                },
-                error: function(jqXHR, textStatus, errorThrown ) {
-              
-                  console.log("Error %s: %s", errorThrown, textStatus);
-                  deactivateSpinner();
-            
-                }
-              });
-            }
-          }
-        }
-
-        var show
 
         $("#getSeq").on("click", function () {
           var text = $("#seq");
