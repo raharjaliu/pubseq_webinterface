@@ -414,7 +414,7 @@ html
               console.log(data);
               switch(data.status) {
                 case "submitted":
-                  recurseWait(data.sequence, data.id, cursorMark);
+                  recurseWait(data.sequence, data.id, "*");
                   break;
                 case "done":
                   console.log("POST succees!");
