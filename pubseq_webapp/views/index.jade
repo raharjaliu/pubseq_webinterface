@@ -13,6 +13,9 @@ html
       var queryResults;
       var curPage = 0;
 
+      // reset queryReeulst and curPage to 0
+      // queryResults contain saved data from
+      // pages within this result session
       function resetQueryResults(query) {
 
         queryResults = {};
@@ -74,12 +77,18 @@ html
               dataType: "json",
               success: function(data, textStatus) {
 
-                var status = data.status;
-                console.log("POST succees!");
-                curPage = pageNum;
-                var nodeResp = JSON.stringify(data, null, 2);
-                console.log(nodeResp);
-                handleReturnData(data);
+                switch(data.status) {
+                  case "done":
+                    curPage = pageNum;
+                    var nodeResp = JSON.stringify(data, null, 2);
+                    console.log(nodeResp);
+                    handleReturnData(data);       
+                    break;
+                  case "failed":
+                    deactivateModal();
+                    activateModalFailure(data.message);
+                    break;
+                }
               },
               error: function(jqXHR, textStatus, errorThrown ) {
               
@@ -130,27 +139,25 @@ html
         var modalProcessing = $('<div class="modal hide" id="pleaseWaitDialog" data-backdrop="static" data-keyboard="false"><div class="modal-header"><h1>Query Running...</h1></div><div class="modal-body"><div class="progress progress-striped active"><div class="bar" style="width: 100%;"></div></div></div></div>');
 
 
-
-        function activateSpinner() {
+        // activate modal blocker window
+        function activateModal() {
 
           $("#modalProcessing").modal("show");
 
-          //var body = document.getElementById("body");
-          //var spinner = new Spinner().spin();
-          //spinner.el.id = "spinner"
-          ////console.log(spinner.el);
-          //body.appendChild(spinner.el);
+        }
+
+        // deactivate modal blocker window
+        function deactivateModal() {
+
+          $("#modalProcessing").modal("hide");
 
         }
 
-        function deactivateSpinner() {
+        // activate modal failure notification
+        function activateModalFailure(failureMessage) {
 
-          $("#modalProcessing").modal("hide");
-          //modalProcessing.modal("hide");
-
-          //console.log("removing spinner");
-          //$(".spinner").remove();
-
+          $("#failureMessage").text(failureMessage);
+          $("#modalFailed").modal("show");
         }
 
         function appendArticles(queryResult) {
@@ -331,17 +338,24 @@ html
               dataType: "json",
               success: function(data, textStatus) {
                 console.log(data);
-                if (data.status === "running") {
-                  console.log("RECURSE");
-                  recurseWait(data.sequence, data.id, cursorMark);
-                } else {
-                  console.log("POST succees!");
-                  var nodeResp = JSON.stringify(data, null, 2);
-                  console.log(nodeResp);
-                  resetQueryResults(data["query"]); 
-                  handleReturnData(data);
-                  deactivateSpinner();
-                  console.log(queryResults);
+                switch(data.status) {
+                  case "running":
+                    console.log("RECURSE");
+                    recurseWait(data.sequence, data.id, cursorMark);
+                    break;
+                  case "done":
+                    console.log("POST succees!");
+                    var nodeResp = JSON.stringify(data, null, 2);
+                    console.log(nodeResp);
+                    resetQueryResults(data["query"]); 
+                    handleReturnData(data);
+                    deactivateModal();
+                    console.log(queryResults);
+                    break;
+                  case "failed":
+                    deactivateModal();
+                    activateModalFailure(data.message);
+                    break;
                 }
               }
             });
@@ -373,8 +387,8 @@ html
           // prevents the form from submitting
           ev.preventDefault();
           
-          // shows spinner
-          activateSpinner();
+          // shows modal
+          activateModal();
 
           //console.log(text.val());
 
@@ -397,21 +411,30 @@ html
             dataType: "json",
             success: function(data, textStatus) {
 
-              if (data.status !== "done") {
-                console.log("RECURSE");
-                recurseWait(data.sequence, data.id, "*");
-              } else {
-                console.log("POST succees!");
-                var nodeResp = JSON.stringify(data, null, 2);
-                resetQueryResults(data["query"]); 
-                handleReturnData(data);
-                deactivateSpinner();
-              }
+              switch(data.status) {
+                case "running":
+                  console.log("RECURSE");
+                  recurseWait(data.sequence, data.id, cursorMark);
+                  break;
+                case "done":
+                  console.log("POST succees!");
+                  var nodeResp = JSON.stringify(data, null, 2);
+                  console.log(nodeResp);
+                  resetQueryResults(data["query"]); 
+                  handleReturnData(data);
+                  deactivateModal();
+                  console.log(queryResults);
+                  break;
+                case "failed":
+                  deactivateModal();
+                  activateModalFailure(data.message);
+                  break;
+                }
             },
             error: function(jqXHR, textStatus, errorThrown ) {
               
               console.log("Error %s: %s", errorThrown, textStatus);
-              deactivateSpinner();
+              deactivateModal();
             
             }
           });
@@ -429,6 +452,14 @@ html
           div(class="modal-body")
             div(class="progress progress-striped active")
               div(class="progress-bar" style="width: 100%;")
+
+    div(class="modal" id="modalFailed" data-backdrop="static" data-keyboard="false")
+      div(class="modal-dialog")
+        div(class="modal-content")
+          div(class="modal-header")
+            h1(id="failureMessage")
+          div(class="modal-body")
+            button(type="button" class="btn btn-default" data-dismiss="modal") Close
     
     nav(class="navbar navbar-inverse navbar-fixed-top")
       div.container

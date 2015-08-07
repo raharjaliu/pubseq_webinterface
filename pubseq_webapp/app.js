@@ -7,16 +7,22 @@ var fs = require('fs');
 var NodeCache = require("node-cache");
 
 var app = express();
+
 // init cache
 var myCache = new NodeCache({
   stdTTL: 1728000,
   checkperiod: 120
 });
 
-// defines default path
+// defines default path for the webapp
+//, which is 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
 // enables POST body parser
+// this will enable web app to parse
+// the content of incoming POST request.
+// Otherwise the request will be read as 
+// undefined upon in POST handler
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
   extended: false
@@ -51,7 +57,8 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 }
 
-// logs execution and its corresponding properties (stdout, stderr, error) onto the server console
+// log execution and its corresponding properties 
+// (stdout, stderr, error) onto the server console
 var logStoutSterrErr = function(exec, stout, sterr, err) {
   console.log('execution: ' + exec);
   console.log(' stdout: ' + stout);
@@ -76,6 +83,20 @@ var createQuery = function(listOfUPIDs) {
   query = encodeURIComponent(query);
 
   return query;
+}
+
+// checks whether the input is valid,
+// i.e. contains only [A-za-z]
+var isValidInput = function(sequence) {
+  var reg = /[^A-Za-z]/;
+
+  console.log(reg.test(sequence));
+
+  if (reg.test(sequence)) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 // defines server
@@ -117,95 +138,101 @@ app.post('/', function(req, res) {
       sequence = input;
       content = "> input_" + sequence.absHashCode() + "\n" + input;
     }
-    console.log("input is ");
-    console.log(input);
-    console.log("sequence is ");
-    console.log(sequence);
-    console.log("content is");
-    console.log(content);
 
-    value = myCache.get(sequence);
+    var isValid = isValidInput(sequence);
 
-    if (value == undefined) {
+    if (isValid) {
 
-      // sequence is not contained in cache
-      console.log("sequence is not contained in cache");
+      value = myCache.get(sequence);
 
-      var fileIn = sequence.absHashCode() + ".in";
-      var fileOut = sequence.absHashCode() + ".out";
-      var fileScript = 'blast_' + sequence.absHashCode() + ".sh";
-      exec('pwd', function(error, stdout, stderr) {
-        logStoutSterrErr('pwd', stdout, stderr, error);
-        var pwd = stdout.trim();
-        var createFile = "echo '" + content + "' > blast/" + fileIn;
-        exec(createFile, function(error, stdout, stderr) {
-          logStoutSterrErr(createFile, stdout, stderr, error);
-          var chmodFile = 'chmod 775 blast/' + fileIn;
-          exec(chmodFile, function(error, stdout, stderr) {
-            logStoutSterrErr(chmodFile, stdout, stderr, error);
-            var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/blast/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/blast/" + fileOut + " -m 8' > blast/" + fileScript;
-            exec(createScript, function(error, stdout, stderr) {
-              logStoutSterrErr(createScript, stdout, stderr, error);
-              var chmodScript = 'chmod 775 blast/' + fileScript;
-              exec(chmodScript, function(error, stdout, stderr, error) {
-                logStoutSterrErr(chmodScript, stdout, stderr, error);
-                var qsubScript = 'sudo -u pubseq qsub blast/' + fileScript;
-                exec(qsubScript, function(error, stdout, stderr, error) {
-                  logStoutSterrErr(qsubScript, stdout, stderr, error);
-                  postResponse['status'] = 'submitted';
-                  postResponse['id'] = sequence.absHashCode();
-                  postResponse['sequence'] = sequence;
-                  res.json(postResponse);
+      if (value == undefined) {
+
+        // sequence is not contained in cache
+        //console.log("sequence is not contained in cache");
+
+        var fileIn = sequence.absHashCode() + ".in";
+        var fileOut = sequence.absHashCode() + ".out";
+        var fileScript = 'blast_' + sequence.absHashCode() + ".sh";
+        exec('pwd', function(error, stdout, stderr) {
+          logStoutSterrErr('pwd', stdout, stderr, error);
+          var pwd = stdout.trim();
+          var createFile = "echo '" + content + "' > blast/" + fileIn;
+          exec(createFile, function(error, stdout, stderr) {
+            logStoutSterrErr(createFile, stdout, stderr, error);
+            var chmodFile = 'chmod 775 blast/' + fileIn;
+            exec(chmodFile, function(error, stdout, stderr) {
+              logStoutSterrErr(chmodFile, stdout, stderr, error);
+              var createScript = "echo 'blastpgp -a 24 -i " + pwd + "/blast/" + fileIn + " -d /mnt/project/rost_db/data/big/big -e 0.001 -o " + pwd + "/blast/" + fileOut + " -m 8' > blast/" + fileScript;
+              exec(createScript, function(error, stdout, stderr) {
+                logStoutSterrErr(createScript, stdout, stderr, error);
+                var chmodScript = 'chmod 775 blast/' + fileScript;
+                exec(chmodScript, function(error, stdout, stderr, error) {
+                  logStoutSterrErr(chmodScript, stdout, stderr, error);
+                  var qsubScript = 'sudo -u pubseq qsub blast/' + fileScript;
+                  exec(qsubScript, function(error, stdout, stderr, error) {
+                    logStoutSterrErr(qsubScript, stdout, stderr, error);
+                    postResponse['status'] = 'submitted';
+                    postResponse['id'] = sequence.absHashCode();
+                    postResponse['sequence'] = sequence;
+                    res.json(postResponse);
+                  });
                 });
               });
             });
           });
         });
-      });
+      } else {
+
+        console.log("sequence is contained in cache");
+        // sequence is contained in cache
+
+        var query = createQuery(value);
+        var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
+          query +
+          '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=*';
+        postResponse['query'] = query;
+
+        http.get(solrQueryComplete, function(resp) {
+
+          console.log('Got response from Solr index');
+          var dataStr = '';
+
+          resp.on("data", function(chunk) {
+
+            // 0 indicates success
+            postResponse['solrStatus'] = 0;
+            dataStr += chunk;
+
+          });
+
+          resp.on('end', function() {
+
+            //console.log(dataStr);
+            var resObj = JSON.parse(dataStr);
+            postResponse['respBody'] = resObj;
+            postResponse['status'] = 'done';
+
+            res.json(postResponse);
+
+          });
+
+        }).on('error', function(e) {
+          console.log('Got error from Solr index');
+          // any status > 0 indicates failure
+          postResponse['solrStatus'] = 1;
+          //console.log(e);
+          res.json(postResponse);
+        });
+      }
+
     } else {
 
-      console.log("sequence is contained in cache");
-      // sequence is contained in cache
+      // the sequence is invalid. Report back to client
 
-      var query = createQuery(value);
-      var solrQueryComplete = 'http://localhost:8983/solr/pubseq/select?wt=json&indent=true&q=' +
-        query +
-        '&sort=pubdate+desc%2Cpmid+desc%2c&rows%2Cpmid+desc=10&cursorMark=*';
-      postResponse['query'] = query;
-
-      http.get(solrQueryComplete, function(resp) {
-
-        console.log('Got response from Solr index');
-        var dataStr = '';
-
-        resp.on("data", function(chunk) {
-
-          // 0 indicates success
-          postResponse['solrStatus'] = 0;
-          dataStr += chunk;
-
-        });
-
-        resp.on('end', function() {
-
-          //console.log(dataStr);
-          var resObj = JSON.parse(dataStr);
-          postResponse['respBody'] = resObj;
-          postResponse['status'] = 'done';
-
-          res.json(postResponse);
-
-        });
-
-      }).on('error', function(e) {
-        console.log('Got error from Solr index');
-        // any status > 0 indicates failure
-        postResponse['solrStatus'] = 1;
-        //console.log(e);
-        res.json(postResponse);
-      });
+      postResponse['status'] = 'failed';
+      postResponse['message'] = 'Invalid Input Text';
+      res.json(postResponse);
     }
-
   } else {
 
     // if mode is not NEW, then mode is either UPDATE or CHECK
@@ -301,19 +328,19 @@ app.post('/', function(req, res) {
 
               // remove BLAST input file
               var removeBlastIn = 'rm -f blast/' + inFile;
-              exec(removeBlastIn, function(error, stdout, stderr){
+              exec(removeBlastIn, function(error, stdout, stderr) {
                 logStoutSterrErr(removeBlastIn, stdout, stderr, error);
               });
 
               // remove BLAST output file
               var removeBlastOut = 'rm -f blast/' + outFile;
-              exec(removeBlastOut, function(error, stdout, stderr){
+              exec(removeBlastOut, function(error, stdout, stderr) {
                 logStoutSterrErr(removeBlastOut, stdout, stderr, error);
               });
 
               // remove BLAST script file
               var removeBlastScript = 'rm -f blast/' + scriptFile;
-              exec(removeBlastScript, function(error, stdout, stderr){
+              exec(removeBlastScript, function(error, stdout, stderr) {
                 logStoutSterrErr(removeBlastScript, stdout, stderr, error);
               });
 
