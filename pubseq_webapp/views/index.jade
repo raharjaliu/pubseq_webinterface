@@ -9,6 +9,18 @@ html
       span.pmid { color:#005266 }
       span.journal { color:#005266 }
     script.
+
+      var queryResults;
+      var curPage = 0;
+
+      function resetQueryResults(query) {
+
+        queryResults = {};
+        queryResults["pages"] = {};
+        queryResults["query"] = query;
+        curPage = 0;
+      }
+
       // openPage is called by the button and thus should be outside
       // jQuery definition area
       function openPage(pageNum) {
@@ -82,9 +94,6 @@ html
       // jQuery component of the web app
       $(function () {
 
-        var queryResults;
-        var curPage = 0;
-
         var helpSeq = {
           0 : "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
               "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
@@ -120,13 +129,7 @@ html
 
         var modalProcessing = $('<div class="modal hide" id="pleaseWaitDialog" data-backdrop="static" data-keyboard="false"><div class="modal-header"><h1>Query Running...</h1></div><div class="modal-body"><div class="progress progress-striped active"><div class="bar" style="width: 100%;"></div></div></div></div>');
 
-        function resetQueryResults(query) {
 
-          queryResults = {};
-          queryResults["pages"] = {};
-          queryResults["query"] = query;
-          curPage = 0;
-        }
 
         function activateSpinner() {
 
