@@ -411,6 +411,7 @@ html
             dataType: "json",
             success: function(data, textStatus) {
 
+              console.log(data);
               switch(data.status) {
                 case "running":
                   console.log("RECURSE");
