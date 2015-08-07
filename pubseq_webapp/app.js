@@ -9,7 +9,7 @@ var NodeCache = require("node-cache");
 var app = express();
 // init cache
 var myCache = new NodeCache({
-  stdTTL: 3600,
+  stdTTL: 1728000,
   checkperiod: 120
 });
 
