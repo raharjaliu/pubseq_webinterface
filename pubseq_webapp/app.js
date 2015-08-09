@@ -272,6 +272,7 @@ app.post('/', function(req, res) {
           //console.log(dataStr);
           var resObj = JSON.parse(dataStr);
           postResponse['respBody'] = resObj;
+          postResponse['status'] = 'done'
           res.json(postResponse);
 
         });
