@@ -1,0 +1,499 @@
+html
+  head
+    title=title
+    link(href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css", rel="stylesheet")
+    script(type="text/javascript", src="//code.jquery.com/jquery-1.9.1.min.js")
+    script(type="text/javascript", src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js")
+    script(type="text/javascript", src="//fgnass.github.io/spin.js/spin.js")
+    style.
+      span.pmid { color:#005266 }
+      span.journal { color:#005266 }
+    script.
+
+      var queryResults;
+      var curPage = 0;
+
+      // reset queryReeulst and curPage to 0
+      // queryResults contain saved data from
+      // pages within this result session
+      function resetQueryResults(query) {
+
+        queryResults = {};
+        queryResults["pages"] = {};
+        queryResults["query"] = query;
+        curPage = 0;
+      }
+
+      // openPage is called by the button and thus should be outside
+      // jQuery definition area
+      function openPage(pageNum) {
+
+        //console.log("openPage()::pageNum is " + pageNum);
+
+        if (pageNum in queryResults) {
+          /*
+          if page was already queried, use already existing response
+          */
+          console.log("page was queried before!");
+
+          // update current page indicator
+          curPage = pageNum;
+
+          handleReturnData(queryResults["pages"][pageNum]["data"]);
+
+          // remove spinner
+
+        } else {
+          /*
+          otherwise, query the page on Solr index via Node
+          */
+          if(pageNum >= 0) {
+
+            var cursorMark;
+
+            if (pageNum == 0) {
+              cursorMark = "*";
+            } else {
+              cursorMark = encodeURIComponent(queryResults["pages"][pageNum - 1]["next"]);
+              console.log("cursorMark is " + cursorMark);
+            }
+
+            $.ajax({
+              method: "POST",
+              url:"/",
+              data: {
+                "query": queryResults["query"],
+                /*
+                  mode defines the behaviour of query:
+                  - 'new' means it's starting query
+                  - 'update' means subsequent query (page moving etc)
+                  in case of 'update' defines the page it request
+                  by adding another key 'cursorMark' defining the page it
+                  wants to go
+                */
+                "mode": "update",
+                "cursorMark": cursorMark
+              },
+              dataType: "json",
+              success: function(data, textStatus) {
+
+                switch(data.status) {
+                  case "done":
+                    curPage = pageNum;
+                    var nodeResp = JSON.stringify(data, null, 2);
+                    console.log(nodeResp);
+                    handleReturnData(data);       
+                    break;
+                  case "failed":
+                    deactivateModal();
+                    activateModalFailure(data.message);
+                    break;
+                }
+              },
+              error: function(jqXHR, textStatus, errorThrown ) {
+              
+                console.log("Error %s: %s", errorThrown, textStatus);
+            
+              }
+            });
+          }
+        }
+      }
+
+      // jQuery component of the web app
+      $(function () {
+
+        var helpSeq = {
+          0 : "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGP" +
+              "DEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAK" +
+              "SVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHE" +
+              "RCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNS" +
+              "SCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELP" +
+              "PGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPG" +
+              "GSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD",
+          1 : "MSVDPACPQSLPCFEASDCKESSPMPVICGPEENYPSLQMSSAEMPHTETVSPLPSSMDL" +
+              "LIQDSPDSSTSPKGKQPTSAEKSVAKKEDKVPVKKQKTRTVFSSTQLCVLNDRFQRQKYL" +
+              "SLQQMQELSNILNLSYKQVKTWFQNQRMKSKRWQKNNWPKNSNGVTQKASAPTYPSLYSS" +
+              "YHQGCLVNPTGNLPMWSNQTWNNSTWSNQTQNIQSWSNHSWNTQTWCTQSWNNQAWNSPF" +
+              "YNCGEESLQSCMQFQPNSPASDLEAALEAAGEGLNVIQQTTRYFSTPQTMDLFLNYSMNM" +
+              "QPEDV",
+          2 : "MEEGMNVLHDFGIQSTHYLQVNYQDSQDWFILVSVIADLRNAFYVLFPIWFHLQEAVGIK" +
+              "LLWVAVIGDWLNLVFKWILFGQRPYWWVLDTDYYSNTSVPLIKQFPVTCETGPGSPSGHA" +
+              "MGTAGVYYVMVTSTLSIFQGKIKPTYRFRCLNVILWLGFWAVQLNVCLSRIYLAAHFPHQ" +
+              "VVAGVLSGIAVAETFSHIHSIYNASLKKYFLITFFLFSFAIGFYLLLKGLGVDLLWTLEK" +
+              "AQRWCEQPEWVHIDTTPFASLLKNLGTLFGLGLALNSSMYRESCKGKLSKWLPFRLSSIV" +
+              "ASLVLLHVFDSLKPPSQVELVFYVLSFCKSAVVPLASVSVIPYCLAQVLGQPHKKSL",
+          3 : "MALLHSGRVLPGIAAAFHPGLAAAASARASSWWTHVEMGPPDPILGVTEAFKRDTNSKKM" +
+              "NLGVGAYRDDNGKPYVLPSVRKAEAQIAAKNLDKEYLPIGGLAEFCKASAELALGENSEV" +
+              "LKSGRFVTVQTISGTGALRIGASFLQRFFKFSRDVFLPKPTWGNHTPIFRDAGMQLQGYR" +
+              "YYDPKTCGFDFTGAVEDISKIPEQSVLLLHACAHNPTGVDPRPEQWKEIATVVKKRNLFA" +
+              "FFDMAYQGFASGDGDKDAWAVRHFIEQGINVCLCQSYAKNMGLYGERVGAFTMVCKDADE" +
+              "AKRVESQLKILIRPMYSNPPLNGARIAAAILNTPDLRKQWLQEVKVMADRIIGMRTQLVS" +
+              "NLKKEGSTHNWQHITDQIGMFCFTGLKPEQVERLIKEFSIYMTKDGRISVAGVTSSNVGY" +
+              "LAHAIHQVTK",
+          4 : "MAGPVKDREAFQRLNFLYQAAHCVLAQDPENQALARFYCYTERTIAKRLVLRRDPSVKRT" +
+              "LCRGCSSLLVPGLTCTQRQRRCRGQRWTVQTCLTCQRSQRFLNDPGHLLWGDRPEAQLGS" +
+              "QADSKPLQPLPNTAHSISDRLPEEKMQTQGSSNQ"
+        }
+
+        var modalProcessing = $('<div class="modal hide" id="pleaseWaitDialog" data-backdrop="static" data-keyboard="false"><div class="modal-header"><h1>Query Running...</h1></div><div class="modal-body"><div class="progress progress-striped active"><div class="bar" style="width: 100%;"></div></div></div></div>');
+
+
+        // activate modal blocker window
+        function activateModal() {
+
+          $("#modalProcessing").modal("show");
+
+        }
+
+        // deactivate modal blocker window
+        function deactivateModal() {
+
+          $("#modalProcessing").modal("hide");
+
+        }
+
+        // activate modal failure notification
+        function activateModalFailure(failureMessage) {
+
+          $("#failureMessage").text(failureMessage);
+          $("#modalFailed").modal("show");
+        }
+
+        function appendArticles(queryResult) {
+
+          var results = document.getElementById("results");
+
+          var h3 = document.createElement("H3");
+          var code = document.createElement("code");
+          code.appendChild(document.createTextNode(queryResult["responseHeader"]["params"]["q"]));
+          var t = document.createTextNode(queryResult["response"]["numFound"] + " results found for query ");
+          results.appendChild(h3);
+          h3.appendChild(t);
+          h3.appendChild(code);
+
+          var docs = queryResult["response"]["docs"]
+
+          for (i = 0; i < docs.length; i++) {
+
+            var article = docs[i];
+
+            var docTitle = document.createElement("div");
+            var h3Title = document.createElement("h3");
+            var aTitle = document.createElement("a");
+
+            aTitle.setAttribute("href", "//www.ncbi.nlm.nih.gov/pubmed/?term=" + article["pmid"]);
+            var h3TitleText = document.createTextNode(article["title"]);
+            aTitle.appendChild(h3TitleText);
+
+            var pmid = document.createElement("span");
+            pmid.setAttribute("class", "pmid");
+            pmid.innerHTML = " (PMID " + article["pmid"] + ")";
+            aTitle.appendChild(pmid);
+
+            h3Title.appendChild(aTitle);
+            docTitle.appendChild(h3Title);
+            results.appendChild(docTitle);
+
+            var author = "";
+            var auths = article["authors"];
+
+            if (auths.length < 5) {
+              for (j = 0; j < auths.length; j++) {
+                if (j > 0) {
+                  author += "; ";
+                }
+                author += auths[j];
+              }
+            } else {
+              author = auths[0] + " et al.";
+            }
+            author += ". ";
+
+            var authoText = document.createTextNode(author);
+            var authP = document.createElement("p");
+            authP.appendChild(authoText);
+            results.appendChild(authP);
+
+            var journal = document.createElement("span");
+            journal.setAttribute("class", "journal");
+            journal.textContent = article["journal"];
+          
+            authP.appendChild(journal);
+
+            var pAbstract = document.createElement("p");
+            var textAbstract = document.createTextNode(article["abstract"].substr(0, 300));
+            pAbstract.appendChild(textAbstract);
+
+            if (article["abstract"].length > 300) {
+              var aReadMore = document.createElement("a");
+
+              aReadMore.setAttribute("href", ("//www.ncbi.nlm.nih.gov/pubmed/?term=" + article["pmid"]));
+              var readMoreText = document.createTextNode(" read more");
+              aReadMore.appendChild(readMoreText);
+              pAbstract.appendChild(aReadMore);
+            }
+
+            results.appendChild(pAbstract);
+          }        
+        }
+
+        function createNav() {
+
+          //console.log("createNav()::curPage is " + curPage);
+
+          // left arrow
+          var results = document.getElementById("results");
+
+          var nav = document.createElement("nav");
+          results.appendChild(nav);
+
+          var ul = document.createElement("ul");
+          ul.setAttribute('class', 'pagination');
+          nav.appendChild(ul);
+
+          var pagePrev = curPage - 1;
+          var liLeft = document.createElement("li");
+          ul.appendChild(liLeft);
+
+          var aLiLeft = document.createElement('a');
+          var onClickLeft = "openPage(" + pagePrev + ");";
+          aLiLeft.setAttribute("onclick", onClickLeft);
+          aLiLeft.setAttribute("aria-label", "Previous");
+          liLeft.appendChild(aLiLeft);
+
+          var spanALiLeft = document.createElement("span");
+          spanALiLeft.setAttribute("aria-hidden", "true");
+          spanALiLeft.innerHTML = "&laquo;";
+          aLiLeft.appendChild(spanALiLeft);
+
+          // current page position
+          var liCur = document.createElement("li");
+          liCur.setAttribute("class", "active");
+          ul.appendChild(liCur);
+
+          var aLiCur = document.createElement('a');
+          aLiCur.setAttribute("href", "#");
+          aLiCur.innerHTML = curPage;
+          liCur.appendChild(aLiCur);
+
+          // right arrow
+          var pageNext = curPage + 1;
+          var liRight = document.createElement("li");
+          ul.appendChild(liRight);
+
+          var aLiRight = document.createElement('a');
+          var onClickRight = "openPage(" + pageNext + ");";
+          aLiRight.setAttribute("onclick", onClickRight);
+          aLiRight.setAttribute("aria-label", "Previous");
+          liRight.appendChild(aLiRight);
+
+          var spanALiRight = document.createElement("span");
+          spanALiRight.setAttribute("aria-hidden", "true");
+          spanALiRight.innerHTML = "&raquo;";
+          aLiRight.appendChild(spanALiRight);
+
+        }
+
+        function handleReturnData(data) {
+
+          //console.log("handleReturnData()::curPage is " + curPage);
+
+          //var str = JSON.stringify(data, null, 2);
+          //console.log(str);
+
+          // remove any exsting children form results
+          var results = document.getElementById("results");
+          while (results.firstChild) {
+            results.removeChild(results.firstChild);
+          }
+
+          // append new articles on results
+          appendArticles(data["respBody"]);
+
+          // create nav bar at the bottom
+          createNav();
+              
+          // add this result onto global object queryResults
+          var thisResult = {
+            "data" : data,
+            "next" : data["respBody"]["nextCursorMark"]
+          }
+          queryResults["pages"][curPage] = thisResult;
+          console.log("queryResults now");
+          console.log(queryResults);
+        }
+
+        function recurseWait(sequence, id, cursorMark) {
+          setTimeout(function(){
+            $.ajax({
+              method: "POST",
+              url: "/",
+              data: {
+                "mode": "check",
+                "id": id,
+                "cursorMark": cursorMark,
+                "sequence": sequence
+              },
+              dataType: "json",
+              success: function(data, textStatus) {
+                console.log(data);
+                switch(data.status) {
+                  case "running":
+                    console.log("RECURSE");
+                    recurseWait(data.sequence, data.id, cursorMark);
+                    break;
+                  case "done":
+                    console.log("POST succees!");
+                    var nodeResp = JSON.stringify(data, null, 2);
+                    console.log(nodeResp);
+                    resetQueryResults(data["query"]); 
+                    handleReturnData(data);
+                    deactivateModal();
+                    console.log(queryResults);
+                    break;
+                  case "failed":
+                    deactivateModal();
+                    activateModalFailure(data.message);
+                    break;
+                }
+              }
+            });
+          }, 10000);
+        }
+
+        $("#getSeq").on("click", function () {
+          var text = $("#seq");
+          var selectedSeq = helpSeq[Math.floor(Math.random() * 5)];
+          text.val(selectedSeq);
+
+        });
+
+        $("#seqform").on("submit", function(ev) {
+
+          var worker = new Worker("worker.js");
+          worker.onmessage = function(e) {
+            console.log('Message received from worker. Message is:');
+            console.log(e.data);
+          }
+          worker.postMessage(["foo", "bar"]);
+
+          // get the value of textarea
+          var text = $("#seq");
+
+          // removes onclick attribute from Query button
+          //$('#search').removeAttr('onclick');
+
+          // prevents the form from submitting
+          ev.preventDefault();
+          
+          // shows modal
+          activateModal();
+
+          //console.log(text.val());
+
+          $.ajax({
+            method: "POST",
+            url:" /",
+            data: {
+              "input": text.val(),
+              /*
+                mode defines the behaviour of query:
+                - 'new' means it's starting query
+                - 'update' means subsequent query (page moving etc)
+                in case of 'update' defines the page it request
+                by adding another key 'cursorMark' defining the page it
+                wants to go
+              */
+              "mode": "new",
+              "cursorMark": "*"
+            },
+            dataType: "json",
+            success: function(data, textStatus) {
+
+              console.log(data);
+              switch(data.status) {
+                case "submitted":
+                  recurseWait(data.sequence, data.id, "*");
+                  break;
+                case "done":
+                  console.log("POST succees!");
+                  var nodeResp = JSON.stringify(data, null, 2);
+                  console.log(nodeResp);
+                  resetQueryResults(data["query"]); 
+                  handleReturnData(data);
+                  deactivateModal();
+                  console.log(queryResults);
+                  break;
+                case "failed":
+                  deactivateModal();
+                  activateModalFailure(data.message);
+                  break;
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown ) {
+              
+              console.log("Error %s: %s", errorThrown, textStatus);
+              deactivateModal();
+            
+            }
+          });
+        });
+      });
+      
+
+  body(id="body")
+
+    div(class="modal" id="modalProcessing" data-backdrop="static" data-keyboard="false")
+      div(class="modal-dialog")
+        div(class="modal-content")
+          div(class="modal-header")
+            h1 Processing...
+          div(class="modal-body")
+            div(class="progress progress-striped active")
+              div(class="progress-bar" style="width: 100%;")
+
+    div(class="modal" id="modalFailed" data-backdrop="static" data-keyboard="false")
+      div(class="modal-dialog")
+        div(class="modal-content")
+          div(class="modal-header")
+            h1(id="failureMessage")
+          div(class="modal-body")
+            button(type="button" class="btn btn-default" data-dismiss="modal") Close
+    
+    nav(class="navbar navbar-inverse navbar-fixed-top")
+      div.container
+        div(class="navbar-header")
+          button(type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar")
+            span(class="sr-only") Toggle navigation
+            span(class="icon-bar")
+            span(class="icon-bar")
+            span(class="icon-bar")
+          a(class="navbar-brand" href="/") PubSeq (dev v.0.0.3)
+        div(id="navbar" class="collapse navbar-collapse")
+          ul(class="nav navbar-nav")
+            li(class="active")
+              a(href="/") Home
+            li
+              a(href="/about") About
+            li
+              a(href="/contact") Contact
+
+    div.container
+      div.jumbotron
+
+        p
+
+        form(role="form", id="seqform")
+          
+          div(class="form-group")
+            label(for="seq") Enter Sequence (<a id="getSeq" href="#">Don't have sequence?</a>)
+            textarea(class="form-control" rows="10", id="seq", style="font-family:monospace;")
+
+          div.btn-group(role"form-group")
+            button(type="button submit", 
+              class="btn btn-primary",
+              id="search"
+              ) Query
+
+          div(id="results")

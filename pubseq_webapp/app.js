@@ -168,7 +168,8 @@ app.post('/', function(req, res) {
                 var chmodScript = 'chmod 775 blast/' + fileScript;
                 exec(chmodScript, function(error, stdout, stderr, error) {
                   logStoutSterrErr(chmodScript, stdout, stderr, error);
-                  var qsubScript = 'sudo -u pubseq qsub -o dev/null -e dev/null blast/' + fileScript;
+                  var qsubScript = 'sudo -u pubseq qsub -o /dev/null -e /dev/null blast/' + fileScript;
+                  //var qsubScript = 'sudo -u pubseq qsub blast/' + fileScript;
                   exec(qsubScript, function(error, stdout, stderr, error) {
                     logStoutSterrErr(qsubScript, stdout, stderr, error);
                     postResponse['status'] = 'submitted';
