@@ -8,6 +8,7 @@ html
     style.
       span.pmid { color:#005266 }
       span.journal { color:#005266 }
+      span.date { color:#005266 }
     script.
 
       var queryResults;
@@ -22,6 +23,92 @@ html
         queryResults["pages"] = {};
         queryResults["query"] = query;
         curPage = 0;
+      }
+
+      function handleReturnData(data) {
+
+        //console.log("handleReturnData()::curPage is " + curPage);
+
+        //var str = JSON.stringify(data, null, 2);
+        //console.log(str);
+
+        // remove any exsting children form results
+        var results = document.getElementById("results");
+        while (results.firstChild) {
+          results.removeChild(results.firstChild);
+        }
+
+        // append new articles on results
+        appendArticles(data["respBody"]);
+
+        // create nav bar at the bottom
+        createNav();
+              
+        // add this result onto global object queryResults
+        var thisResult = {
+          "data" : data,
+          "next" : data["respBody"]["nextCursorMark"]
+        }
+        queryResults["pages"][curPage] = thisResult;
+        console.log("queryResults now");
+        console.log(queryResults);
+      }
+
+      function createNav() {
+
+        //console.log("createNav()::curPage is " + curPage);
+
+        // left arrow
+        var results = document.getElementById("results");
+
+        var nav = document.createElement("nav");
+        results.appendChild(nav);
+
+        var ul = document.createElement("ul");
+        ul.setAttribute('class', 'pagination');
+        nav.appendChild(ul);
+
+        var pagePrev = curPage - 1;
+        var liLeft = document.createElement("li");
+        ul.appendChild(liLeft);
+
+        var aLiLeft = document.createElement('a');
+        var onClickLeft = "openPage(" + pagePrev + ");";
+        aLiLeft.setAttribute("onclick", onClickLeft);
+        aLiLeft.setAttribute("aria-label", "Previous");
+        liLeft.appendChild(aLiLeft);
+
+        var spanALiLeft = document.createElement("span");
+        spanALiLeft.setAttribute("aria-hidden", "true");
+        spanALiLeft.innerHTML = "&laquo;";
+        aLiLeft.appendChild(spanALiLeft);
+
+        // current page position
+        var liCur = document.createElement("li");
+        liCur.setAttribute("class", "active");
+        ul.appendChild(liCur);
+
+        var aLiCur = document.createElement('a');
+        aLiCur.setAttribute("href", "#");
+        aLiCur.innerHTML = curPage;
+        liCur.appendChild(aLiCur);
+
+        // right arrow
+        var pageNext = curPage + 1;
+        var liRight = document.createElement("li");
+        ul.appendChild(liRight);
+
+        var aLiRight = document.createElement('a');
+        var onClickRight = "openPage(" + pageNext + ");";
+        aLiRight.setAttribute("onclick", onClickRight);
+        aLiRight.setAttribute("aria-label", "Previous");
+        liRight.appendChild(aLiRight);
+
+        var spanALiRight = document.createElement("span");
+        spanALiRight.setAttribute("aria-hidden", "true");
+        spanALiRight.innerHTML = "&raquo;";
+        aLiRight.appendChild(spanALiRight);
+
       }
 
       // openPage is called by the button and thus should be outside
@@ -100,6 +187,92 @@ html
         }
       }
 
+      function appendArticles(queryResult) {
+
+        var results = document.getElementById("results");
+
+        var h3 = document.createElement("H3");
+        var code = document.createElement("code");
+        code.appendChild(document.createTextNode(queryResult["responseHeader"]["params"]["q"]));
+        var t = document.createTextNode(queryResult["response"]["numFound"] + " results found for query ");
+        results.appendChild(h3);
+        h3.appendChild(t);
+        h3.appendChild(code);
+
+        var docs = queryResult["response"]["docs"]
+
+        for (i = 0; i < docs.length; i++) {
+
+          var article = docs[i];
+
+          var docTitle = document.createElement("div");
+          var h3Title = document.createElement("h3");
+          var aTitle = document.createElement("a");
+
+          aTitle.setAttribute("href", "//www.ncbi.nlm.nih.gov/pubmed/?term=" + article["pmid"]);
+          var h3TitleText = document.createTextNode(article["title"]);
+          aTitle.appendChild(h3TitleText);
+
+          var pmid = document.createElement("span");
+          pmid.setAttribute("class", "pmid");
+          pmid.innerHTML = " (PMID " + article["pmid"] + ")";
+          aTitle.appendChild(pmid);
+
+          h3Title.appendChild(aTitle);
+          docTitle.appendChild(h3Title);
+          results.appendChild(docTitle);
+
+          var author = "";
+          var auths = article["authors"];
+
+          if (auths.length < 5) {
+            for (j = 0; j < auths.length; j++) {
+              if (j > 0) {
+                author += "; ";
+              }
+              author += auths[j];
+            }
+          } else {
+            author = auths[0] + " et al.";
+          }
+          author += ". ";
+
+          var authoText = document.createTextNode(author);
+          var authP = document.createElement("p");
+          authP.appendChild(authoText);
+          results.appendChild(authP);
+
+          var journal = document.createElement("span");
+          journal.setAttribute("class", "journal");
+          journal.textContent = (article["journal"] + ". ");
+
+
+          var pubdate = article["pubdate"];
+          pubdate = pubdate.split("T")[0];
+          var date = document.createElement("span");
+          date.setAttribute("class", "date");
+          date.textContent = (pubdate + ".");
+          
+          authP.appendChild(journal);
+          authP.appendChild(date);
+
+          var pAbstract = document.createElement("p");
+          var textAbstract = document.createTextNode(article["abstract"].substr(0, 300));
+          pAbstract.appendChild(textAbstract);
+
+          if (article["abstract"].length > 300) {
+            var aReadMore = document.createElement("a");
+
+            aReadMore.setAttribute("href", ("//www.ncbi.nlm.nih.gov/pubmed/?term=" + article["pmid"]));
+            var readMoreText = document.createTextNode(" read more");
+            aReadMore.appendChild(readMoreText);
+            pAbstract.appendChild(aReadMore);
+          }
+
+          results.appendChild(pAbstract);
+        }        
+      }
+
       // jQuery component of the web app
       $(function () {
 
@@ -158,170 +331,6 @@ html
 
           $("#failureMessage").text(failureMessage);
           $("#modalFailed").modal("show");
-        }
-
-        function appendArticles(queryResult) {
-
-          var results = document.getElementById("results");
-
-          var h3 = document.createElement("H3");
-          var code = document.createElement("code");
-          code.appendChild(document.createTextNode(queryResult["responseHeader"]["params"]["q"]));
-          var t = document.createTextNode(queryResult["response"]["numFound"] + " results found for query ");
-          results.appendChild(h3);
-          h3.appendChild(t);
-          h3.appendChild(code);
-
-          var docs = queryResult["response"]["docs"]
-
-          for (i = 0; i < docs.length; i++) {
-
-            var article = docs[i];
-
-            var docTitle = document.createElement("div");
-            var h3Title = document.createElement("h3");
-            var aTitle = document.createElement("a");
-
-            aTitle.setAttribute("href", "//www.ncbi.nlm.nih.gov/pubmed/?term=" + article["pmid"]);
-            var h3TitleText = document.createTextNode(article["title"]);
-            aTitle.appendChild(h3TitleText);
-
-            var pmid = document.createElement("span");
-            pmid.setAttribute("class", "pmid");
-            pmid.innerHTML = " (PMID " + article["pmid"] + ")";
-            aTitle.appendChild(pmid);
-
-            h3Title.appendChild(aTitle);
-            docTitle.appendChild(h3Title);
-            results.appendChild(docTitle);
-
-            var author = "";
-            var auths = article["authors"];
-
-            if (auths.length < 5) {
-              for (j = 0; j < auths.length; j++) {
-                if (j > 0) {
-                  author += "; ";
-                }
-                author += auths[j];
-              }
-            } else {
-              author = auths[0] + " et al.";
-            }
-            author += ". ";
-
-            var authoText = document.createTextNode(author);
-            var authP = document.createElement("p");
-            authP.appendChild(authoText);
-            results.appendChild(authP);
-
-            var journal = document.createElement("span");
-            journal.setAttribute("class", "journal");
-            journal.textContent = article["journal"];
-          
-            authP.appendChild(journal);
-
-            var pAbstract = document.createElement("p");
-            var textAbstract = document.createTextNode(article["abstract"].substr(0, 300));
-            pAbstract.appendChild(textAbstract);
-
-            if (article["abstract"].length > 300) {
-              var aReadMore = document.createElement("a");
-
-              aReadMore.setAttribute("href", ("//www.ncbi.nlm.nih.gov/pubmed/?term=" + article["pmid"]));
-              var readMoreText = document.createTextNode(" read more");
-              aReadMore.appendChild(readMoreText);
-              pAbstract.appendChild(aReadMore);
-            }
-
-            results.appendChild(pAbstract);
-          }        
-        }
-
-        function createNav() {
-
-          //console.log("createNav()::curPage is " + curPage);
-
-          // left arrow
-          var results = document.getElementById("results");
-
-          var nav = document.createElement("nav");
-          results.appendChild(nav);
-
-          var ul = document.createElement("ul");
-          ul.setAttribute('class', 'pagination');
-          nav.appendChild(ul);
-
-          var pagePrev = curPage - 1;
-          var liLeft = document.createElement("li");
-          ul.appendChild(liLeft);
-
-          var aLiLeft = document.createElement('a');
-          var onClickLeft = "openPage(" + pagePrev + ");";
-          aLiLeft.setAttribute("onclick", onClickLeft);
-          aLiLeft.setAttribute("aria-label", "Previous");
-          liLeft.appendChild(aLiLeft);
-
-          var spanALiLeft = document.createElement("span");
-          spanALiLeft.setAttribute("aria-hidden", "true");
-          spanALiLeft.innerHTML = "&laquo;";
-          aLiLeft.appendChild(spanALiLeft);
-
-          // current page position
-          var liCur = document.createElement("li");
-          liCur.setAttribute("class", "active");
-          ul.appendChild(liCur);
-
-          var aLiCur = document.createElement('a');
-          aLiCur.setAttribute("href", "#");
-          aLiCur.innerHTML = curPage;
-          liCur.appendChild(aLiCur);
-
-          // right arrow
-          var pageNext = curPage + 1;
-          var liRight = document.createElement("li");
-          ul.appendChild(liRight);
-
-          var aLiRight = document.createElement('a');
-          var onClickRight = "openPage(" + pageNext + ");";
-          aLiRight.setAttribute("onclick", onClickRight);
-          aLiRight.setAttribute("aria-label", "Previous");
-          liRight.appendChild(aLiRight);
-
-          var spanALiRight = document.createElement("span");
-          spanALiRight.setAttribute("aria-hidden", "true");
-          spanALiRight.innerHTML = "&raquo;";
-          aLiRight.appendChild(spanALiRight);
-
-        }
-
-        function handleReturnData(data) {
-
-          //console.log("handleReturnData()::curPage is " + curPage);
-
-          //var str = JSON.stringify(data, null, 2);
-          //console.log(str);
-
-          // remove any exsting children form results
-          var results = document.getElementById("results");
-          while (results.firstChild) {
-            results.removeChild(results.firstChild);
-          }
-
-          // append new articles on results
-          appendArticles(data["respBody"]);
-
-          // create nav bar at the bottom
-          createNav();
-              
-          // add this result onto global object queryResults
-          var thisResult = {
-            "data" : data,
-            "next" : data["respBody"]["nextCursorMark"]
-          }
-          queryResults["pages"][curPage] = thisResult;
-          console.log("queryResults now");
-          console.log(queryResults);
         }
 
         function recurseWait(sequence, id, cursorMark) {
